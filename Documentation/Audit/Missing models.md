@@ -9,8 +9,23 @@ This audit examines the dataset containing **1,972 microphone models across 204 
 
 ## Executive Summary Metrics
 * **Total Brand Files**: 204
-* **Total Microphones Cataloged**: 1,972
+* **Total Microphones Cataloged**: 1,982
 * **Datestamped Additions (`2026-08-07`)**:
+  * **Neumann (`Neumann.json` — 50 Models present)**:
+    * **Status**: Complete detailed historical tube and solid-state milestone catalog added.
+    * **Detailed Milestone Ingestion**:
+      * **Tube Era Milestones**:
+        * **CMV 3 "The Neumann Bottle"** (1928): World's first mass-produced condenser mic with swappable bayonet heads (CM 7, CM 8, CM 9).
+        * **U 47** (1949): First switchable pattern condenser (VF14 tube, M7/K47 capsule).
+        * **M 49** (1951): First continuously variable directional pattern controlled remotely via power supply (NN 48 / N 52).
+        * **SM 2** (1956): World's first stereo microphone with rotating upper capsule.
+        * **U 67** (1960): EF86 tube successor to U 47; introduced tapered body, K 67 dual-diaphragm capsule, -10 dB pad, and HPF.
+      * **Solid-State (FET) & Transformerless Eras**:
+        * **KM 84** (1966): World's first 48V phantom-powered mic with removable KK 64 capsule head.
+        * **U 87 Ai** (1967/1986): Industry standard studio condenser with increased output sensitivity.
+        * **U 47 fet** (1972): High-SPL solid-state U 47 variant for kick drums and bass cabs.
+        * **TLM 170** (1983): Neumann's first transformerless (TLM) microphone with 5 switchable polar patterns.
+        * **BCM 705** (2005): Neumann's first dynamic microphone for broadcast with twist-off pop grilles.
   * **Peavey Electronics (Complete Catalog — 21 models)**:
     * *Dynamic*: `PV-7`, `PVi-100`, `PVi-2` (Gold/White finish options), `PVi-3-XLR`, `DM2`, `PVM-45ir`, `PVM-22` (Neodymium diamond-coated diaphragm), `PVM-45` (Slim probe hypercardioid), `PVM-520i` (Large-diaphragm 45Hz kick/tom mic), `PVM-380n`.
     * *Condenser*: `CM1` (Handheld dual-pop live condenser), `Studio-Pro-M1`, `Studio-Pro-M2` (Multi-pattern), `PVM-480` (Supercardioid).
