@@ -123,8 +123,8 @@
           },
           "access": {
             "type": ["string", "null"],
-            "enum": ["aes70", "manual-switch", "read-only", null],
-            "description": "For a mapped parameter, whether it is a real control point. 'manual-switch' is the common case here and is the gap between knowing a value and being able to set it."
+            "enum": ["aes70", "local", "read-only", null],
+            "description": "For a mapped parameter, whether it is a real control point. 'local' is the common case here and is exactly the gap between knowing a value and being able to set it: a pad marked '(Via Switch)' is a function, not an AES70 object."
           },
           "evidence": {
             "type": "array",

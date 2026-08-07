@@ -210,18 +210,23 @@ function buildDetail(mic) {
   hero.appendChild(facts);
   root.appendChild(hero);
 
+  /* --- tags --- */
+  if (has(cls.tags)) {
+    const wrap = el("div", "badges");
+    for (const t of cls.tags) {
+      const name = typeof t === "string" ? t : t.name;
+      const chip = el("button", "tag tagbtn", name);
+      chip.type = "button";
+      chip.title = "Browse everything tagged “" + name + "”";
+      chip.addEventListener("click", () => openTag(name));
+      wrap.appendChild(chip);
+    }
+    root.appendChild(section("Tags", wrap));
+  }
+
   /* --- signal chain --- */
   const diagram = diagramSection(mic);
   if (diagram) root.appendChild(diagram);
-
-  /* --- description --- */
-  if (content.description_html) {
-    const p = el("div", "prose");
-    p.appendChild(sanitize(content.description_html));
-    root.appendChild(section("Description", p));
-  } else if (content.description_text) {
-    root.appendChild(section("Description", el("div", "prose", content.description_text)));
-  }
 
   /* --- pickup patterns --- */
   if (has(spec.pickup_patterns)) {
@@ -312,6 +317,15 @@ function buildDetail(mic) {
   }
   if (specCards.children.length) root.appendChild(section("Specifications", specCards));
 
+  /* --- description --- */
+  if (content.description_html) {
+    const p = el("div", "prose");
+    p.appendChild(sanitize(content.description_html));
+    root.appendChild(section("Description", p));
+  } else if (content.description_text) {
+    root.appendChild(section("Description", el("div", "prose", content.description_text)));
+  }
+
   /* --- frequency graphs --- */
   if (has(mic.frequency_graphs)) {
     const wrap = el("div", "graphs");
@@ -390,19 +404,6 @@ function buildDetail(mic) {
     root.appendChild(section("Links", wrap));
   }
 
-  /* --- tags --- */
-  if (has(cls.tags)) {
-    const wrap = el("div", "badges");
-    for (const t of cls.tags) {
-      const name = typeof t === "string" ? t : t.name;
-      const chip = el("button", "tag tagbtn", name);
-      chip.type = "button";
-      chip.title = "Browse everything tagged “" + name + "”";
-      chip.addEventListener("click", () => openTag(name));
-      wrap.appendChild(chip);
-    }
-    root.appendChild(section("Tags", wrap));
-  }
 
   /* --- raw source tables --- */
   if (has(spec.raw_tables)) {

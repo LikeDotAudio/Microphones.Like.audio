@@ -1017,8 +1017,8 @@
     ],
     "access": [
       { "key": "aes70", "label": "AES70 control point", "description": "Settable over the network, as the profile intends." },
-      { "key": "manual-switch", "label": "Manual switch", "description": "The function exists but is operated by hand. The value is real; the control point is not." },
-      { "key": "read-only", "label": "Read-only", "description": "A descriptive value the device would report rather than accept." }
+      { "key": "local", "label": "Local control only", "description": "The function is there but is worked on the device itself — a switch, a menu. The value is real; the control point is not." },
+      { "key": "read-only", "label": "Reported value", "description": "A descriptive value a device would report rather than accept." }
     ]
   }
 }
