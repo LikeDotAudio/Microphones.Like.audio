@@ -205,6 +205,27 @@
           "type": "string",
           "description": "The caveat every device report carries: a mapped parameter means the catalogue knows the value, not that the device exposes the object. Held here so the reader and the page say the same thing."
         },
+        "not_scorable": {
+          "type": "object",
+          "description": "Parameters excluded from the score's denominator because they are properties of a unit rather than of a model. Named here rather than in code so the exclusion is reviewable in one place.",
+          "additionalProperties": false,
+          "required": ["description", "keys"],
+          "properties": {
+            "description": { "type": "string" },
+            "keys": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["key", "why"],
+                "properties": {
+                  "key": { "type": "string", "description": "parameters[].key." },
+                  "why": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
         "pattern_positions": {
           "type": "array",
           "description": "Catalogue pattern name to profile PatternType position. `gradient` is the first-order coefficient the profile publishes for that pattern, and is null where the profile gives none.",

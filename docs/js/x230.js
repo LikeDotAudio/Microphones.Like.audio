@@ -12,7 +12,7 @@
  * properties) and interns the strings every record repeats into a wordbook:
  *
  *   p  mapped percentage
- *   c  [total, mapped, absent, unknown, not-applicable, open-in-draft, applicable]
+ *   c  [total, mapped, absent, unknown, not-applicable, open-in-draft, applicable, runtime]
  *   b  per profile block, [status initial, why index]
  *   r  rows that carry something, [key, status code, values, access, why, evidence]
  *   n  the not-applicable majority, grouped [why index, [keys]]
@@ -41,7 +41,7 @@ export const x230 = () => profile;
 
 /* ---------------------------------------------------------------- expanding */
 
-const STATUS = { m: "mapped", a: "absent", u: "unknown", o: "undefined-in-profile" };
+const STATUS = { m: "mapped", a: "absent", u: "unknown", o: "undefined-in-profile", r: "runtime" };
 const BLOCK_STATUS = { i: "instantiated", n: "not-instantiated", u: "unknown" };
 
 export function expand(rec) {
@@ -94,7 +94,7 @@ export function expand(rec) {
   }
   rows.sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0));
 
-  const [total, mapped, absent, unknown, na, open, applicable] = packed.c;
+  const [total, mapped, absent, unknown, na, open, applicable, runtime = 0] = packed.c;
   return {
     profile_id: profile.profile.id,
     profile_revision: profile.profile.revision || null,
@@ -113,6 +113,7 @@ export function expand(rec) {
       total, mapped, absent, unknown,
       not_applicable: na,
       undefined_in_profile: open,
+      runtime,
       applicable,
       mapped_pct: packed.p,
     },
@@ -133,6 +134,7 @@ const STATUS_LABEL = {
   unknown: "unknown",       /* the value cell prints the NULL; saying it twice is noise */
   "not-applicable": "n/a",
   "undefined-in-profile": "open in draft",
+  runtime: "per-device · not scored",
 };
 
 const ACCESS_LABEL = { aes70: "AES70 control point", local: "local control only", "read-only": "reported value" };
@@ -169,7 +171,8 @@ function meter(cov) {
   const bar = el("div", "x230meter");
   const parts = [
     ["mapped", cov.mapped], ["absent", cov.absent], ["unknown", cov.unknown],
-    ["undefined-in-profile", cov.undefined_in_profile], ["not-applicable", cov.not_applicable],
+    ["undefined-in-profile", cov.undefined_in_profile], ["runtime", cov.runtime],
+    ["not-applicable", cov.not_applicable],
   ];
   for (const [key, n] of parts) {
     if (!n) continue;
@@ -217,8 +220,10 @@ function buildReport(rep) {
 
   wrap.appendChild(meter(cov));
   wrap.appendChild(el("div", "x230sum",
-    cov.unknown + " null · " + cov.absent + " not implemented · " +
-    cov.not_applicable + " out of scope · " + cov.undefined_in_profile + " open in the draft"));
+    [cov.unknown + " null", cov.absent + " not implemented",
+      cov.not_applicable + " out of scope", cov.undefined_in_profile + " open in the draft",
+      cov.runtime ? cov.runtime + " per-device, not scored" : null]
+      .filter(Boolean).join(" · ")));
   wrap.appendChild(el("div", "x230note", rep.control.note));
 
   const chips = el("div", "badges");

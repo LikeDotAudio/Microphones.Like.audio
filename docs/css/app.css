@@ -534,6 +534,7 @@ td.dim { color: var(--faint); }
   --x-abs: var(--s2);
   --x-nul: var(--faint);
   --x-open: var(--s4);
+  --x-run: var(--s5);
   --x-na: var(--border);
 }
 
@@ -544,6 +545,7 @@ td.dim { color: var(--faint); }
 .x230meter b.s-absent { background: var(--x-abs); }
 .x230meter b.s-unknown { background: var(--x-nul); }
 .x230meter b.s-undefined-in-profile { background: var(--x-open); }
+.x230meter b.s-runtime { background: var(--x-run); }
 .x230meter b.s-not-applicable { background: var(--x-na); }
 
 .x230sum { margin: 7px 0 4px; font-size: 11.5px; color: var(--muted); }
@@ -563,6 +565,7 @@ td.dim { color: var(--faint); }
 .x230row.s-absent { border-left-color: var(--x-abs); }
 .x230row.s-unknown { border-left-color: var(--x-nul); }
 .x230row.s-undefined-in-profile { border-left-color: var(--x-open); }
+.x230row.s-runtime { border-left-color: var(--x-run); }
 .x230head { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
 .x230name { font-weight: 600; font-size: 12.5px; }
 .x230st {
@@ -572,6 +575,7 @@ td.dim { color: var(--faint); }
 .s-mapped > .x230st, .tag.x230st.s-mapped { color: var(--x-map); }
 .s-absent > .x230st, .tag.x230st.s-absent { color: var(--x-abs); }
 .s-undefined-in-profile > .x230st, .tag.x230st.s-undefined-in-profile { color: var(--x-open); }
+.s-runtime > .x230st, .tag.x230st.s-runtime { color: var(--x-run); }
 .x230val { margin-top: 2px; font-size: 12.5px; }
 .x230val.nul { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--faint); font-size: 11.5px; }
 .x230bind { margin-top: 3px; font-size: 10.5px; color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

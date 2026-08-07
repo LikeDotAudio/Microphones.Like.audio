@@ -50,7 +50,7 @@
       "type": "object",
       "description": "Counts across parameters[], so a device can be compared with another at a glance.",
       "additionalProperties": false,
-      "required": ["total", "mapped", "absent", "unknown", "not_applicable", "undefined_in_profile", "applicable", "mapped_pct"],
+      "required": ["total", "mapped", "absent", "unknown", "not_applicable", "undefined_in_profile", "runtime", "applicable", "mapped_pct"],
       "properties": {
         "total": { "type": "integer", "description": "Every parameter the profile defines." },
         "mapped": { "type": "integer" },
@@ -58,9 +58,10 @@
         "unknown": { "type": "integer" },
         "not_applicable": { "type": "integer" },
         "undefined_in_profile": { "type": "integer" },
+        "runtime": { "type": "integer" },
         "applicable": {
           "type": "integer",
-          "description": "total minus not_applicable and undefined_in_profile — the parameters this device could meaningfully answer."
+          "description": "total minus not_applicable, undefined_in_profile and runtime — the parameters this device could meaningfully answer, and the denominator of the score."
         },
         "mapped_pct": {
           "type": ["number", "null"],
@@ -109,8 +110,8 @@
 
           "status": {
             "type": "string",
-            "enum": ["mapped", "absent", "unknown", "not-applicable", "undefined-in-profile"],
-            "description": "mapped — the catalogue supplies a value. absent — the catalogue positively records the function is missing, the equivalent of the profile's own 'N' code. unknown — applicable, but nothing in the catalogue can answer it; value is null. not-applicable — the block is not instantiated. undefined-in-profile — X230 left the binding open, so there is nothing to conform to."
+            "enum": ["mapped", "absent", "unknown", "not-applicable", "undefined-in-profile", "runtime"],
+            "description": "mapped — the catalogue supplies a value. absent — the catalogue positively records the function is missing, the equivalent of the profile's own 'N' code. unknown — applicable, but nothing in the catalogue can answer it; value is null. not-applicable — the block is not instantiated. undefined-in-profile — X230 left the binding open, so there is nothing to conform to. runtime — a per-unit or user-set value that exists only on a live device; reported as null and left out of the score, since no catalogue of models could hold it."
           },
           "value": {
             "type": ["string", "null"],

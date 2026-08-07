@@ -35,7 +35,8 @@ RF_BLOCKS = ["transmitter", "receiver", "analyzer", "manager", "xmit_antenna", "
 # prose and profile metadata the browser already holds, so what ships is the
 # per-record part only: statuses, values, evidence, and indices into a wordbook
 # of the strings every record shares.
-STATUS_CODE = {"mapped": "m", "absent": "a", "unknown": "u", "undefined-in-profile": "o"}
+STATUS_CODE = {"mapped": "m", "absent": "a", "unknown": "u", "undefined-in-profile": "o",
+               "runtime": "r"}
 
 # The caveat every report carries lives in the profile's crosswalk, so the
 # reader and the page cannot end up wording it differently.
@@ -63,6 +64,8 @@ class Reader:
         self.patterns = {row["corpus"]: row for row in cross.get("pattern_positions") or []}
         self.digital = [s.lower() for s in (cross.get("digital_connectors") or {}).get("match") or []]
         self.control_note = cross.get("control_note") or CONTROL_NOTE_FALLBACK
+        self.not_scorable = {row["key"]: row["why"]
+                             for row in (cross.get("not_scorable") or {}).get("keys") or []}
 
     # ---------------------------------------------------------------- helpers
 
@@ -430,6 +433,15 @@ class Reader:
                 row["status"] = "unknown"
                 row["why"] = row["why"] or "The extractor found nothing to report."
 
+            # A serial number or a user's label belongs to a unit, not to a
+            # model. Leaving them in the denominator would mark every record
+            # down for missing something no record can carry — so they are
+            # reported and not scored. If a record ever does supply one, the
+            # mapped status stands and it counts.
+            if row["status"] == "unknown" and param["key"] in self.not_scorable:
+                row["status"] = "runtime"
+                row["why"] = row["why"] or self.not_scorable[param["key"]]
+
             row["evidence"] = [{"path": p, "value": "" if v is None else str(v)}
                                for p, v in row["evidence"]]
             rows.append(row)
@@ -439,7 +451,8 @@ class Reader:
 
         na = count("not-applicable")
         undefined = count("undefined-in-profile")
-        applicable = len(rows) - na - undefined
+        runtime = count("runtime")
+        applicable = len(rows) - na - undefined - runtime
         mapped = count("mapped")
 
         return {
@@ -463,6 +476,7 @@ class Reader:
                 "unknown": count("unknown"),
                 "not_applicable": na,
                 "undefined_in_profile": undefined,
+                "runtime": runtime,
                 "applicable": applicable,
                 "mapped_pct": round(mapped / applicable * 100) if applicable else None,
             },
@@ -525,7 +539,8 @@ def compact(report, book):
     return {
         "p": cov["mapped_pct"],
         "c": [cov["total"], cov["mapped"], cov["absent"], cov["unknown"],
-              cov["not_applicable"], cov["undefined_in_profile"], cov["applicable"]],
+              cov["not_applicable"], cov["undefined_in_profile"], cov["applicable"],
+              cov["runtime"]],
         "b": [[b["status"][0], book.intern(b["why"])] for b in report["blocks"]],
         "r": rows,
         "n": [[why, keys] for why, keys in skipped.items()],

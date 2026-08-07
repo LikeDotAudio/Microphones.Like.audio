@@ -1009,10 +1009,18 @@
       "match": ["USB", "Apple Lightning", "Apple 30-pin", "Apple Headset TRRS", "AES3", "AES67", "Dante"]
     },
     "control_note": "Nothing in this catalogue publishes an AES70 device model. A mapped parameter means the catalogue knows the value, not that the microphone exposes the object.",
+    "not_scorable": {
+      "description": "Parameters that only exist on a live device: a per-unit value stamped at manufacture, or one typed in by whoever installs it. They are still reported, but they are left out of the score's denominator — counting them would mark a record down for not holding something no record of a *model* could ever hold.",
+      "keys": [
+        { "key": "serial_number", "why": "Assigned per unit at manufacture. A catalogue describes models." },
+        { "key": "user_label", "why": "Typed in by whoever installs the device." }
+      ]
+    },
     "statuses": [
       { "key": "mapped", "label": "Mapped", "description": "The catalogue supplies a value for this profile parameter." },
       { "key": "absent", "label": "Absent", "description": "The catalogue positively records that the device does not have this function — the equivalent of the profile's own 'N' type code." },
       { "key": "unknown", "label": "Unknown / NULL", "description": "The parameter applies to this device but the catalogue holds nothing that could answer it. The value is null." },
+      { "key": "runtime", "label": "Per-device", "description": "A value that only exists on a live unit — a serial number, a user's label. Reported as null, and left out of the score because no catalogue could supply it." },
       { "key": "not-applicable", "label": "Not applicable", "description": "The parameter belongs to a block this device does not instantiate." },
       { "key": "undefined-in-profile", "label": "Undefined in profile", "description": "X230 itself leaves the binding open, so there is nothing to conform to." }
     ],

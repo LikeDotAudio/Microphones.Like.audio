@@ -112,10 +112,20 @@ each parameter lands in one of five states:
 | **unknown** | the parameter applies but nothing can answer it. The value is **NULL**, and printed as one |
 | **n/a** | the parameter's block is not instantiated on this device |
 | **open in draft** | X230 itself left the binding open, so there is nothing to conform to |
+| **per-device** | a serial number or a user's label — a value that exists only on a live unit |
 
 The **score** is mapped ÷ applicable, as a percentage. It appears on every model
 card, at the head of the device panel, and as a filter and sort order. A C 414
-B-XL II scores 55%; a Royer R-10 27%; a wireless system 12%.
+B-XL II scores 67% (6 of 9); a Royer R-10 33%; a wireless system 12%.
+
+The last three states are all excluded from the denominator, for the same
+reason: a record should not be marked down for failing to answer a question that
+was never asked of it. A microphone with no converter has no ADC block to
+describe; the draft's four unbound parameters have nothing to conform to; and no
+catalogue of *models* can hold a serial number or the name someone will type in
+after installing the thing. The keys left out on that last ground are named in
+the profile's `crosswalk.not_scorable`, not buried in code — and if a record ever
+does supply one, it counts.
 
 Read the score carefully: it measures **this catalogue against the profile**, not
 a microphone against the standard. No record here publishes an AES70 device
