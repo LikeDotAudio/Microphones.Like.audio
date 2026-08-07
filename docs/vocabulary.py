@@ -205,6 +205,7 @@ RF_RANGE_COLUMNS = [
 #   flow:   audio (default) | digital | rf | control | power
 MIC_CHAIN = [
     {"key": "transducer", "label": "TRANSDUCER", "shape": "circle", "source": "transducer"},
+    {"key": "matrix", "label": "PATTERN MATRIX", "source": "patternMatrix", "optional": True},
     {"key": "pad", "label": "ATTENUATOR", "source": "pads", "optional": True},
     {"key": "filter", "label": "FILTER", "source": "filters", "optional": True},
     {"key": "preamp", "label": "PREAMP", "shape": "triangle", "source": "preamp", "optional": True},
@@ -221,6 +222,16 @@ RF_CHAIN = [
     {"key": "transmitter", "label": "TRANSMITTER", "source": "rfTransmitter", "flow": "digital"},
     {"key": "antenna", "label": "ANTENNA", "shape": "antenna", "source": "rfAntenna", "flow": "rf"},
     {"key": "out", "label": "RF (out)", "source": "rfOut", "terminal": True, "flow": "rf"},
+]
+
+# A microphone with more than one signal path. js/chain.js decides which case a
+# record is — a stereo pair of capsules, the two diaphragms of a dual-backplate
+# capsule feeding a pattern matrix, or both at once — and these are the words
+# each one is drawn and tabulated with.
+CHAIN_SPLITS = [
+    {"key": "stereo", "label": "SIGNAL PATHS", "labels": ["LEFT", "RIGHT"]},
+    {"key": "mid-side", "label": "SIGNAL PATHS", "labels": ["MID", "SIDE"]},
+    {"key": "dual", "label": "DIAPHRAGMS", "labels": ["FRONT", "REAR"]},
 ]
 
 # Feeds drawn entering the chain from below rather than in line with it.

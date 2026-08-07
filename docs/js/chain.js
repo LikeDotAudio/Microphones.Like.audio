@@ -33,14 +33,93 @@ function tubeTypes(mic) {
   return tagList(mic).filter((t) => TUBE_TAG.test(t) && !KNOWN_NON_TUBE.has(t.toLowerCase()));
 }
 
+/* ------------------------------------------------------- more than one path
+
+   Two records in the corpus need more than a single row of boxes, and one
+   needs both at once:
+
+   - a stereo mic is two capsules and two amplifier chains in one body, so it
+     is drawn as two chains meeting at the connector;
+   - a mic offering omni *and* figure-8 cannot be doing it with one diaphragm.
+     That pair is the signature of a dual-backplate capsule: two cardioid
+     elements whose outputs are summed with variable polarity, which is the
+     pattern matrix. Front and rear are drawn separately, feeding it.
+
+   A multipattern stereo mic — the C700S — is both, so each channel gets its
+   own pair of diaphragms and its own matrix. */
+
+/* Patterns that describe how a pair of capsules is being combined, not what
+   one diaphragm hears. They belong to the array, so they are kept out of the
+   element list and cited against the stereo split instead. */
+const ARRAY_PATTERN = /stereo|blumlein|binaural|ambisonic|surround/i;
+
+const patternsOf = (mic) => (mic.specifications.pickup_patterns || [])
+  .map((p) => p.pattern_base || p.pattern).filter(Boolean);
+
+const uniq = (list) => [...new Set(list)];
+
+const elementPatterns = (mic) => uniq(patternsOf(mic).filter((p) => !ARRAY_PATTERN.test(p)));
+
+const arrayPatterns = (mic) => uniq(patternsOf(mic).filter((p) => ARRAY_PATTERN.test(p)));
+
+/* Omni and figure-8 from one capsule means two diaphragms — no single element
+   does both. Three or more selectable patterns says the same thing the long
+   way round, and catches the omni/cardioid/figure-8 classic. */
+function dualDiaphragm(mic) {
+  const el = elementPatterns(mic);
+  const has = (re) => el.some((p) => re.test(p));
+  return (has(/^omni/i) && has(/bidirectional|figure/i)) ||
+    (mic.classification.is_multipattern && el.length >= 3);
+}
+
+/* What splits this chain, if anything: channels across, diaphragms within. */
+export function splitOf(mic) {
+  if (mic.classification.kind === "rf") return null;
+  const stereo = !!mic.classification.is_stereo;
+  const dual = dualDiaphragm(mic);
+  if (!stereo && !dual) return null;
+
+  const modes = arrayPatterns(mic);
+  const el = elementPatterns(mic);
+  const split = { channels: null, elements: null, notes: [] };
+
+  if (stereo) {
+    /* Mid-side is the one array whose two paths are not a left and a right;
+       calling them so would misname what the drawing shows. */
+    const midSide = modes.some((p) => /mid-side/i.test(p));
+    split.channels = midSide && modes.length === 1 ? "mid-side" : "stereo";
+    split.notes.push({
+      key: split.channels,
+      detail: [["classification.is_stereo", "true"]].concat(
+        modes.length ? [["specifications.pickup_patterns[].pattern", modes.join(", ")]] : []),
+    });
+  }
+  if (dual) {
+    split.elements = "dual";
+    split.notes.push({
+      key: "dual",
+      detail: [
+        ["specifications.pickup_patterns[].pattern", el.join(", ")],
+        ["classification.is_multipattern", String(!!mic.classification.is_multipattern)],
+      ],
+    });
+  }
+  return split;
+}
+
 /* ------------------------------------------------------------ microphone */
 
 const EXTRACTORS = {
   transducer(mic) {
     const cls = mic.classification;
     const capsule = mic.specifications.capsule || {};
-    const patterns = (mic.specifications.pickup_patterns || [])
-      .map((p) => p.pattern).filter(Boolean);
+    const split = splitOf(mic);
+    /* What one diaphragm hears. When the chain splits, the patterns belong to
+       the blocks that make them — the matrix, or the stereo pair — so the
+       capsule is left saying only what it is. */
+    const patterns = split
+      ? (split.elements ? [] : elementPatterns(mic))
+      : (mic.specifications.pickup_patterns || []).map((p) => p.pattern).filter(Boolean);
     const lines = [cap(cls.transducer_type || "unknown")];
     const dia = capsule.diaphragm_diameter_mm || capsule.capsule_diameter_mm;
     if (patterns.length) {
@@ -59,6 +138,18 @@ const EXTRACTORS = {
     }
     if (cls.form_factor) detail.push(["classification.form_factor", cls.form_factor]);
     return { lines, detail };
+  },
+
+  /* The network that turns two diaphragms into a chosen pattern. Only a mic
+     whose data implies a dual-backplate capsule gets one. */
+  patternMatrix(mic) {
+    const split = splitOf(mic);
+    if (!split || !split.elements) return null;
+    const el = elementPatterns(mic);
+    return {
+      lines: el.length > 3 ? [el.length + " patterns"] : el,
+      detail: el.map((p) => ["specifications.pickup_patterns[].pattern", p]),
+    };
   },
 
   pads(mic) {
@@ -283,5 +374,28 @@ export function buildChain(rec) {
     });
   }
 
-  return { kind: isRf ? "rf" : "mic", blocks, feeds };
+  return { kind, blocks, feeds, split: isRf ? null : splitFor(rec, blocks) };
+}
+
+/* The split, resolved against the blocks that survived and the words config
+   gives each case. `keys` names the blocks that exist once per path — for a
+   stereo mic that is the whole chain up to the connector the pair shares. */
+function splitFor(mic, blocks) {
+  const found = splitOf(mic);
+  if (!found) return null;
+  const words = (key) => (cfg().chainSplits || []).find((s) => s.key === key);
+  const body = blocks.filter((b) => !b.terminal);
+
+  const chan = found.channels && words(found.channels);
+  const elem = found.elements && words(found.elements);
+  if (!chan && !elem) return null;
+
+  return {
+    channels: chan ? { ...chan, keys: body.map((b) => b.key) } : null,
+    elements: elem ? { ...elem, keys: ["transducer"] } : null,
+    notes: found.notes.map((n) => {
+      const w = words(n.key) || { label: n.key.toUpperCase(), labels: [] };
+      return { label: w.label, lines: [w.labels.join(" / ")], detail: n.detail, flow: "audio" };
+    }),
+  };
 }

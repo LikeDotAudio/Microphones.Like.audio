@@ -220,6 +220,7 @@ def build_config(mics, rf_records, warn):
         "micChain": V.MIC_CHAIN,
         "rfChain": V.RF_CHAIN,
         "chainFeeds": V.CHAIN_FEEDS,
+        "chainSplits": V.CHAIN_SPLITS,
         "chainFlows": V.CHAIN_FLOWS,
         "traits": [dict(t, count=traits.get(t["key"], 0)) for t in V.TRAITS],
         "priceBands": bands,
