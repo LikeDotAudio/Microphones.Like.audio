@@ -130,7 +130,16 @@ header {
 .navlink:hover { background: var(--panel-2); color: var(--text); text-decoration: none; }
 .navlink.on { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
 
-.patbar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+/* ---------- polar-pattern picker ----------
+   Its own strip below the tabs and above the facet chips. Eleven 30px buttons
+   are more than a header can hold at any laptop width, and they filter the
+   same two panes the chips underneath them do — so they belong with the
+   filters, not with the navigation. */
+.patbar {
+  flex: none; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+  padding: 7px 14px; background: var(--panel);
+  border-bottom: 1px solid var(--border-soft);
+}
 .pat {
   width: 30px; height: 30px; padding: 0;
   display: grid; place-items: center;
@@ -554,11 +563,11 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
   .statsview { padding: 16px 14px 60px; }
 }
 
-/* The header stops being one line well before the panes stop being columns:
-   a laptop window is already too narrow for it. Left to itself it squeezes
-   the pattern bar until that wraps into a column tall enough to shove the
-   panes off the screen; here search takes a row of its own and the pattern
-   buttons sit directly under it, scrolling sideways instead of stacking. */
+/* The header stops being one line well before the panes stop being columns: a
+   laptop window is already too narrow for the tabs, the search box and the
+   catalogue count side by side. Here the tabs take a row of their own and
+   search takes the next, each scrolling sideways rather than stacking — a
+   wrapped header grows tall enough to shove the panes off the screen. */
 @media (max-width: 1180px) {
   header {
     flex-wrap: wrap;
@@ -572,7 +581,7 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
   #theme { order: 2; }
   .spacer { display: none; }
 
-  /* Sideways-scrolling strips, in order: tabs, search, pattern buttons. */
+  /* Sideways-scrolling strips, in order: tabs, then search. */
   .nav {
     order: 3; width: 100%;
     overflow-x: auto; overscroll-behavior-x: contain;
@@ -583,11 +592,12 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
 
   #search { order: 4; flex: 1 0 100%; max-width: none; }
 
+  /* One sideways strip rather than two wrapped rows of buttons — wrapping
+     here costs the panes a whole row of height. */
   .patbar {
-    order: 5; width: 100%;
     flex-wrap: nowrap;
     overflow-x: auto; overscroll-behavior-x: contain;
-    padding-bottom: 2px;
+    padding: 6px 8px;
     scrollbar-width: none;
   }
   .patbar::-webkit-scrollbar { display: none; }

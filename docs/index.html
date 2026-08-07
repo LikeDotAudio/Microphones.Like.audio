@@ -27,11 +27,15 @@
     <a class="navlink" id="navX230" href="#/x230">X230</a>
   </nav>
   <input id="search" type="search" placeholder="Search brands and models…" autocomplete="off" spellcheck="false">
-  <div class="patbar" id="patbar"></div>
   <div class="spacer"></div>
   <div class="stat" id="stat"></div>
   <button class="iconbtn" id="theme" title="Toggle theme">◐</button>
 </header>
+
+<!-- The polar patterns sit between the tabs and the facet chips: they are a
+     filter like the chips are, but a picture rather than a word. Filled by
+     js/patterns.js from data/config.json. -->
+<div class="patbar" id="patbar" hidden></div>
 
 <!-- Above the panes, not inside one: these facets narrow the brand tree as
      much as the model list. Both rows are filled by js/controls.js from
