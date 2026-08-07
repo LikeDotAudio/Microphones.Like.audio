@@ -8,6 +8,7 @@ import { go, hashParts } from "./hash.js";
 import { renderDetail } from "./detail.js";
 import { renderModels } from "./models.js";
 import { state } from "./state.js";
+import { renderRfControls, renderRfView } from "./rfview.js";
 import { renderStats } from "./stats.js";
 import { renderTagView, openTag } from "./tagview.js";
 import { renderTree, syncTreeSelection } from "./tree.js";
@@ -51,6 +52,7 @@ export function route() {
 
   if (parts[0] === "stats") { showView("stats"); return; }
   if (parts[0] === "tags") { showView("tags"); return; }
+  if (parts[0] === "wireless") { showView("wireless"); return; }
   /* #/tag/<name> is the shareable form of "browse everything tagged X". */
   if (parts[0] === "tag" && parts[1]) { showView("browse"); openTag(parts[1]); return; }
   showView("browse");
