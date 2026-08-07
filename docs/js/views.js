@@ -18,19 +18,23 @@ let routed = false;      // has route() run once? distinguishes deep links from 
 export function showView(name) {
   const stats = name === "stats";
   const tags = name === "tags";
-  const browse = !stats && !tags;
+  const wireless = name === "wireless";
+  const browse = !stats && !tags && !wireless;
   document.querySelector("main").hidden = !browse;
   $("stats").hidden = !stats;
   $("tags").hidden = !tags;
+  $("wireless").hidden = !wireless;
   // Search and the pattern buttons drive the browse panes only; the other
   // views carry their own filters.
   $("search").hidden = !browse;
   $("patbar").hidden = !browse;
   $("navBrowse").classList.toggle("on", browse);
+  $("navWireless").classList.toggle("on", wireless);
   $("navTags").classList.toggle("on", tags);
   $("navStats").classList.toggle("on", stats);
   if (stats && !statsBuilt) { renderStats(); statsBuilt = true; }
   if (tags) renderTagView();
+  if (wireless) { renderRfControls(); renderRfView(); }
 }
 
 /* Point the middle pane at one brand, or at the whole catalogue when null. */
