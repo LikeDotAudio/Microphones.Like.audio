@@ -18,6 +18,14 @@
     --accent-soft: #e8effe;
     --chip: #eef0f4;
     --shadow: 0 1px 2px rgba(16, 22, 34, .06);
+    /* Categorical series, fixed slot order — validated for CVD separation
+       against this surface. Never cycled, never reassigned by rank. */
+    --s1: #2a78d6;  /* condenser */
+    --s2: #eb6834;  /* dynamic   */
+    --s3: #1baf7a;  /* ribbon    */
+    --s4: #eda100;  /* other     */
+    --s5: #e87ba4;  /* hybrid    */
+    --grid: #e6e9ef;
   }
   :root:not([data-theme="light"]) {
     color-scheme: light dark;
@@ -36,6 +44,13 @@
       --accent-soft: #1d2a44;
       --chip: #232830;
       --shadow: none;
+      /* Same hues, re-stepped for the dark surface — not an automatic flip. */
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+      --s4: #c98500;
+      --s5: #d55181;
+      --grid: #262b33;
     }
   }
   :root[data-theme="dark"] {
@@ -52,6 +67,12 @@
     --accent-soft: #1d2a44;
     --chip: #232830;
     --shadow: none;
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --s5: #d55181;
+    --grid: #262b33;
   }
 
   * { box-sizing: border-box; }
@@ -88,6 +109,28 @@
     color: var(--text);
   }
   #search:focus { outline: none; border-color: var(--accent); }
+  .nav { display: flex; gap: 2px; flex: none; }
+  .navlink {
+    padding: 6px 12px; border-radius: 7px; font-size: 13px;
+    color: var(--muted); text-decoration: none; white-space: nowrap;
+  }
+  .navlink:hover { background: var(--panel-2); color: var(--text); text-decoration: none; }
+  .navlink.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+  .patbar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .pat {
+    width: 30px; height: 30px; padding: 0;
+    display: grid; place-items: center;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 7px; cursor: pointer; color: var(--muted);
+  }
+  .pat:hover { border-color: var(--accent); color: var(--text); }
+  .pat.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pat svg { width: 21px; height: 21px; display: block; }
+  .pat svg .fillp { fill: currentColor; opacity: .8; }
+  .pat svg .strokep { fill: none; stroke: currentColor; stroke-width: 1.4; opacity: .8; }
+  .pat.on svg .fillp, .pat.on svg .strokep { opacity: 1; }
+
   .spacer { flex: 1; }
   .stat { font-size: 12px; color: var(--muted); white-space: nowrap; }
   .iconbtn {
@@ -143,30 +186,41 @@
   .leaf.sel { background: var(--accent-soft); color: var(--text); font-weight: 500; }
   .leaf .dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); }
 
-  /* transducer colour coding, shared by dots and chips */
-  .t-condenser { background: #3b82f6; }
-  .t-dynamic   { background: #f59e0b; }
-  .t-ribbon    { background: #ef4444; }
-  .t-boundary  { background: #10b981; }
-  .t-hybrid    { background: #a855f7; }
-  .t-unknown   { background: #94a3b8; }
+  /* Transducer colour coding — one mapping shared by tree dots, list chips and
+     charts, so a type keeps its hue everywhere. Always paired with its label. */
+  .t-condenser { background: var(--s1); }
+  .t-dynamic   { background: var(--s2); }
+  .t-ribbon    { background: var(--s3); }
+  .t-boundary  { background: var(--s4); }
+  .t-hybrid    { background: var(--s5); }
+  .t-unknown   { background: var(--faint); }
 
   /* ---------- model list ---------- */
   .filters {
-    flex: none; display: flex; flex-wrap: wrap; gap: 5px;
+    flex: none; display: flex; flex-direction: column; gap: 6px;
     padding: 8px 10px; background: var(--panel); border-bottom: 1px solid var(--border);
   }
+  .frow { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .frow .push { margin-left: auto; }
   .chip {
     border: 1px solid var(--border); background: var(--panel-2);
     border-radius: 999px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; color: var(--muted);
   }
   .chip:hover { border-color: var(--accent); }
   .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chip.clear { border-style: dashed; }
   .filters select {
-    margin-left: auto; font-size: 11.5px; padding: 3px 6px;
+    font-size: 11.5px; padding: 3px 6px;
     background: var(--panel-2); color: var(--text);
     border: 1px solid var(--border); border-radius: 6px;
   }
+  .filters select.on { border-color: var(--accent); color: var(--text); }
+  .showmore {
+    display: block; width: calc(100% - 22px); margin: 10px 11px 16px;
+    padding: 7px; font-size: 12px; cursor: pointer; color: var(--muted);
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 7px;
+  }
+  .showmore:hover { border-color: var(--accent); color: var(--text); }
   .card {
     display: flex; gap: 10px; padding: 9px 11px;
     border-bottom: 1px solid var(--border-soft); cursor: pointer;
@@ -252,6 +306,99 @@
   table.raw th { background: var(--panel-2); color: var(--muted); font-weight: 600; }
   details.rawdump > summary { cursor: pointer; color: var(--muted); font-size: 12.5px; }
 
+  /* ---------- statistics view ---------- */
+  .statsview { flex: 1; min-height: 0; overflow-y: auto; padding: 22px 26px 70px; }
+  .statswrap { max-width: 1180px; margin: 0 auto; }
+  .statsview h2.vh {
+    margin: 30px 0 12px; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--faint); font-weight: 600;
+  }
+  .statsview h2.vh:first-child { margin-top: 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 10px; }
+  .tile {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow);
+  }
+  .tile .n { font-size: 25px; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .tile .l { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .tile .sub2 { font-size: 11px; color: var(--faint); margin-top: 3px; }
+
+  .figs { display: grid; grid-template-columns: repeat(auto-fit, minmax(390px, 1fr)); gap: 12px; }
+  figure.fig {
+    margin: 0; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px 16px; box-shadow: var(--shadow);
+  }
+  figure.fig.wide { grid-column: 1 / -1; }
+  figure.fig figcaption { margin-bottom: 2px; font-weight: 600; font-size: 13.5px; }
+  figure.fig .note { font-size: 11.5px; color: var(--faint); margin-bottom: 12px; }
+  .figbar { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .figbar select {
+    font-size: 11.5px; padding: 3px 6px; background: var(--panel-2);
+    color: var(--text); border: 1px solid var(--border); border-radius: 6px;
+  }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: block; }
+
+  /* Horizontal bars: label · track · value. 4px rounded data-end on the
+     free end only, so every bar stays anchored to a common baseline. */
+  .rows { display: flex; flex-direction: column; gap: 6px; }
+  .row { display: grid; grid-template-columns: var(--labelw, 122px) 1fr auto; gap: 10px; align-items: center; }
+  .row .rl { font-size: 12.5px; color: var(--muted); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .rl.link { cursor: pointer; }
+  .row .rl.link:hover { color: var(--accent); }
+  .track { height: 15px; display: flex; gap: 2px; background: var(--grid); border-radius: 0 4px 4px 0; overflow: hidden; }
+  .track > b { display: block; height: 100%; min-width: 1px; }
+  .track > b:last-child { border-radius: 0 4px 4px 0; }
+  .row .rv { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; min-width: 44px; }
+  .row .rv small { color: var(--faint); font-size: 11px; }
+
+  /* Vertical histogram */
+  .hist { display: flex; align-items: flex-end; gap: 4px; height: 150px; }
+  .hist .col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+  .hist .col b { display: block; background: var(--s1); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .hist .col em { display: block; font-style: normal; font-size: 11px; color: var(--text); text-align: center; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .histx { display: flex; gap: 4px; margin-top: 6px; }
+  .histx span { flex: 1; text-align: center; font-size: 10.5px; color: var(--faint); }
+
+  /* Data explorer */
+  .expbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .expbar input, .expbar select {
+    font-size: 12.5px; padding: 5px 8px; background: var(--panel-2);
+    color: var(--text); border: 1px solid var(--border); border-radius: 7px;
+  }
+  .expbar input { min-width: 190px; }
+  .expbar .grow { flex: 1; }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+  table.data { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.data th {
+    position: sticky; top: 0; z-index: 1;
+    background: var(--panel-2); border-bottom: 1px solid var(--border);
+    padding: 8px 10px; text-align: left; white-space: nowrap; cursor: pointer;
+    font-weight: 600; color: var(--muted);
+  }
+  table.data th:hover { color: var(--text); }
+  table.data th .ind { color: var(--accent); }
+  table.data td { border-bottom: 1px solid var(--border-soft); padding: 6px 10px; white-space: nowrap; }
+  table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.data td.wrap { white-space: normal; min-width: 180px; }
+  table.data tbody tr { cursor: pointer; }
+  table.data tbody tr:hover { background: var(--panel-2); }
+  table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+  .more { text-align: center; padding: 10px; }
+
+  .tip {
+    position: fixed; z-index: 50; pointer-events: none;
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.22);
+    max-width: 260px;
+  }
+  .tip b { font-weight: 600; }
+  .tip .tv { color: var(--muted); }
+
   .empty { padding: 40px 24px; color: var(--faint); text-align: center; }
   .notice {
     margin: 24px; padding: 16px 18px; border-radius: 10px;
@@ -276,7 +423,12 @@
 
 <header>
   <div class="brandmark">Microphone Browser<small>recordinghacks dataset</small></div>
+  <nav class="nav">
+    <a class="navlink" id="navBrowse" href="#/">Browse</a>
+    <a class="navlink" id="navStats" href="#/stats">Statistics</a>
+  </nav>
   <input id="search" type="search" placeholder="Search brands and models…" autocomplete="off" spellcheck="false">
+  <div class="patbar" id="patbar"></div>
   <div class="spacer"></div>
   <div class="stat" id="stat"></div>
   <button class="iconbtn" id="theme" title="Toggle theme">◐</button>
@@ -291,17 +443,46 @@
   <div class="pane">
     <div class="pane-head"><h2 id="modelHead">Models</h2><span class="sub" id="modelCount"></span></div>
     <div class="filters" id="filters" hidden>
-      <button class="chip on" data-type="all">All</button>
-      <button class="chip" data-type="condenser">Condenser</button>
-      <button class="chip" data-type="dynamic">Dynamic</button>
-      <button class="chip" data-type="ribbon">Ribbon</button>
-      <button class="chip" data-avail="current">Current</button>
-      <select id="sort">
-        <option value="name">Name</option>
-        <option value="price">Price ↑</option>
-        <option value="price-desc">Price ↓</option>
-        <option value="year">Newest</option>
-      </select>
+      <div class="frow">
+        <button class="chip on" data-type="all">All</button>
+        <button class="chip" data-type="condenser">Condenser</button>
+        <button class="chip" data-type="dynamic">Dynamic</button>
+        <button class="chip" data-type="ribbon">Ribbon</button>
+        <button class="chip" data-type="boundary">Boundary</button>
+        <select id="form" class="push" title="Form factor">
+          <option value="all">Any form factor</option>
+          <option value="side-address">Side-address</option>
+          <option value="end-address">End-address</option>
+          <option value="pencil">Pencil</option>
+          <option value="handheld">Handheld</option>
+          <option value="shotgun">Shotgun</option>
+          <option value="boundary">Boundary</option>
+          <option value="lavalier">Lavalier</option>
+        </select>
+      </div>
+      <div class="frow">
+        <select id="price" title="MSRP range">
+          <option value="any">Any price</option>
+          <option value="0-100">Under $100</option>
+          <option value="100-300">$100 – $300</option>
+          <option value="300-700">$300 – $700</option>
+          <option value="700-1500">$700 – $1,500</option>
+          <option value="1500-4000">$1,500 – $4,000</option>
+          <option value="4000-">$4,000 and up</option>
+          <option value="none">No price listed</option>
+        </select>
+        <button class="chip" data-trait="tube">Tube</button>
+        <button class="chip" data-trait="multi">Multipattern</button>
+        <button class="chip" data-trait="stereo">Stereo</button>
+        <button class="chip" data-avail="current">Current</button>
+        <button class="chip clear push" id="reset" hidden>Clear filters</button>
+        <select id="sort">
+          <option value="name">Name</option>
+          <option value="price">Price ↑</option>
+          <option value="price-desc">Price ↓</option>
+          <option value="year">Newest</option>
+        </select>
+      </div>
     </div>
     <div class="pane-body" id="models"><div class="empty">Pick a brand</div></div>
   </div>
@@ -311,6 +492,9 @@
     <div class="pane-body" id="detail"><div class="empty">Pick a microphone</div></div>
   </div>
 </main>
+
+<section id="stats" class="statsview" hidden></section>
+<div id="tip" class="tip" hidden></div>
 
 <script>
 "use strict";
@@ -350,21 +534,164 @@ function sanitize(html) {
   return tpl.content;
 }
 
+/* --------------------------------------------------------- polar patterns */
+/* Icons are the real polar equations sampled into a path, so the buttons show
+   the shape each pattern actually has rather than a stylised stand-in. */
+const TAU = Math.PI * 2;
+
+function polarPath(r, opt) {
+  const { rot = 0, scale = 1, steps = 120 } = opt || {};
+  let d = "";
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * TAU;
+    const rad = Math.max(0, r(t - rot)) * 11 * scale;
+    const x = 12 + rad * Math.sin(t);
+    const y = 12 - rad * Math.cos(t);
+    d += (i ? "L" : "M") + x.toFixed(2) + " " + y.toFixed(2);
+  }
+  return d + "Z";
+}
+
+const R = {
+  omni: () => 1,
+  cardioid: (t) => 0.5 * (1 + Math.cos(t)),
+  wide: (t) => 0.7 + 0.3 * Math.cos(t),
+  super: (t) => Math.abs(0.37 + 0.63 * Math.cos(t)),
+  hyper: (t) => Math.abs(0.25 + 0.75 * Math.cos(t)),
+  fig8: (t) => Math.abs(Math.cos(t)),
+  shotgun: (t) => Math.pow(Math.max(Math.cos(t), 0), 5) + 0.14 * Math.pow(Math.max(-Math.cos(t), 0), 3),
+};
+
+const icon = (paths) =>
+  '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+  paths.map((p) => '<path class="' + (p.stroke ? "strokep" : "fillp") + '" d="' + p.d + '"/>').join("") +
+  "</svg>";
+
+/* `match` lists the pattern names as they appear in the dataset. */
+const PATTERNS = [
+  { key: "cardioid", label: "Cardioid", match: ["Cardioid"],
+    svg: icon([{ d: polarPath(R.cardioid) }]) },
+  { key: "omni", label: "Omnidirectional", match: ["Omnidirectional"],
+    svg: icon([{ d: polarPath(R.omni, { scale: 0.92 }) }]) },
+  { key: "fig8", label: "Bidirectional (figure-8)", match: ["Bidirectional"],
+    svg: icon([{ d: polarPath(R.fig8) }]) },
+  { key: "super", label: "Supercardioid", match: ["Supercardioid"],
+    svg: icon([{ d: polarPath(R.super) }]) },
+  { key: "hyper", label: "Hypercardioid", match: ["Hypercardioid"],
+    svg: icon([{ d: polarPath(R.hyper) }]) },
+  { key: "wide", label: "Wide cardioid", match: ["Wide Cardioid"],
+    svg: icon([{ d: polarPath(R.wide) }]) },
+  { key: "shotgun", label: "Shotgun / lobar", match: ["Shotgun"],
+    svg: icon([{ d: polarPath(R.shotgun) }]) },
+  { key: "stereo", label: "Stereo (X/Y, M-S, Blumlein, binaural)",
+    match: ["X/Y Stereo", "Mid-Side Stereo", "Blumlein", "Binaural"],
+    svg: icon([
+      { d: polarPath(R.cardioid, { rot: -0.75, scale: 0.8 }) },
+      { d: polarPath(R.cardioid, { rot: 0.75, scale: 0.8 }) },
+    ]) },
+  { key: "multi", label: "Switchable / multipattern", multi: true,
+    match: ["9 polar patterns", "continuously variable pattern selection"],
+    svg: icon([
+      { d: polarPath(R.cardioid, { scale: 0.66 }) },
+      { d: polarPath(R.omni, { scale: 0.95 }), stroke: true },
+    ]) },
+];
+
+const PATTERN_BY_KEY = new Map(PATTERNS.map((p) => [p.key, p]));
+
+function renderPatternBar() {
+  const bar = $("patbar");
+  bar.innerHTML = "";
+  for (const p of PATTERNS) {
+    const b = el("button", "pat");
+    b.type = "button";
+    b.dataset.key = p.key;
+    b.title = p.label;
+    b.setAttribute("aria-label", p.label);
+    b.setAttribute("aria-pressed", "false");
+    b.innerHTML = p.svg;
+    bar.appendChild(b);
+  }
+}
+
+/* A mic passes if it offers ANY of the selected patterns. */
+function patternPass(m) {
+  if (!state.patterns.size) return true;
+  for (const key of state.patterns) {
+    const p = PATTERN_BY_KEY.get(key);
+    if (!p) continue;
+    if (p.multi && m.multi) return true;
+    if ((m.patterns || []).some((n) => p.match.includes(n))) return true;
+  }
+  return false;
+}
+
+/* ---------------------------------------------------------------- facets */
+/* MSRP buckets, as [min, max) in dollars; "none" means the page listed no price. */
+const PRICE_BANDS = {
+  "0-100": [0, 100],
+  "100-300": [100, 300],
+  "300-700": [300, 700],
+  "700-1500": [700, 1500],
+  "1500-4000": [1500, 4000],
+  "4000-": [4000, Infinity],
+};
+
+/* How many cards the all-brands list renders per page. */
+const PAGE = 120;
+
+function pricePass(m) {
+  if (state.price === "any") return true;
+  if (state.price === "none") return m.msrp == null;
+  const band = PRICE_BANDS[state.price];
+  if (!band) return true;
+  return m.msrp != null && m.msrp >= band[0] && m.msrp < band[1];
+}
+
+/* Everything the facet controls ask of a model, AND-ed together. */
+function facetPass(m) {
+  if (state.type !== "all" && m.type !== state.type) return false;
+  if (state.form !== "all" && m.form !== state.form) return false;
+  if (state.currentOnly && m.avail !== "current") return false;
+  for (const t of state.traits) if (!m[t]) return false;
+  return pricePass(m);
+}
+
+function filtersActive() {
+  return state.type !== "all" || state.form !== "all" || state.price !== "any" ||
+    state.traits.size > 0 || state.currentOnly || state.patterns.size > 0;
+}
+
+function clearFilters() {
+  state.type = "all";
+  state.form = "all";
+  state.price = "any";
+  state.traits.clear();
+  state.currentOnly = false;
+  state.patterns.clear();
+}
+
 /* ------------------------------------------------------------------ state */
 const state = {
   index: null,
   byBrand: new Map(),      // slug -> brand record from index
   brandData: new Map(),    // slug -> full records, lazily fetched
   query: "",
-  brand: null,
+  patterns: new Set(),     // selected polar-pattern keys, OR-ed together
+  brand: null,             // null = browse every brand at once
   model: null,
   type: "all",
+  form: "all",
+  price: "any",
+  traits: new Set(),       // tube / multi / stereo, AND-ed together
   currentOnly: false,
   sort: "name",
+  limit: PAGE,             // cards rendered so far in the all-brands list
 };
 
 /* ------------------------------------------------------------------- boot */
 async function boot() {
+  renderPatternBar();
   try {
     const res = await fetch("data/index.json");
     if (!res.ok) throw new Error("HTTP " + res.status);
@@ -395,44 +722,66 @@ function showLoadError(err) {
 }
 
 /* -------------------------------------------------------------- brand tree */
-function matchesQuery(brand) {
+const textPass = (m) => {
   const q = state.query;
-  if (!q) return { brand: true, models: null };
-  const brandHit = brand.name.toLowerCase().includes(q) || brand.slug.toLowerCase().includes(q);
+  return !q || (m.model || "").toLowerCase().includes(q) || (m.subtitle || "").toLowerCase().includes(q);
+};
+
+/* Which models of a brand survive the search box, the pattern buttons and the
+   facet controls — null means the brand itself drops out of the tree. */
+function brandView(brand) {
+  const q = state.query;
+  const brandHit = !q || brand.name.toLowerCase().includes(q) || brand.slug.toLowerCase().includes(q);
   const models = brand.models.filter((m) =>
-    (m.model || "").toLowerCase().includes(q) || (m.subtitle || "").toLowerCase().includes(q));
-  if (!brandHit && !models.length) return null;
-  return { brand: brandHit, models: brandHit && !models.length ? null : models };
+    patternPass(m) && facetPass(m) && (brandHit || textPass(m)));
+  return models.length ? { brandHit, models } : null;
 }
 
 function renderTree() {
   const host = $("tree");
   host.innerHTML = "";
   const frag = document.createDocumentFragment();
+  const filtering = !!state.query || filtersActive();
   let shownBrands = 0, shownModels = 0;
 
+  /* Entry point for browsing the catalogue without committing to a brand. */
+  const all = el("div", "brand");
+  const allRow = el("div", "brand-row");
+  allRow.append(
+    el("div", "twisty"),
+    el("div", "brand-name", "All microphones"),
+    el("div", "count", String(state.index.total_models)));
+  allRow.addEventListener("click", () => go(null));
+  all.dataset.all = "1";
+  all.appendChild(allRow);
+  if (!state.brand) all.classList.add("sel");
+  frag.appendChild(all);
+
   for (const brand of state.index.brands) {
-    const hit = matchesQuery(brand);
+    const hit = brandView(brand);
     if (!hit) continue;
     shownBrands++;
-    const searching = !!state.query;
-    const kids = hit.models || brand.models;
-    if (searching) shownModels += hit.models ? hit.models.length : brand.models.length;
+    shownModels += hit.models.length;
 
     const node = el("div", "brand");
     node.dataset.slug = brand.slug;
     if (state.brand === brand.slug) node.classList.add("sel", "open");
-    if (searching && hit.models) node.classList.add("open");
+    // A text search narrows to a handful of brands, so open them; a pattern
+    // filter alone still spans most of the list, so leave those collapsed.
+    if (state.query && !hit.brandHit) node.classList.add("open");
 
     const row = el("div", "brand-row");
     const tw = el("div", "twisty", "▶");
     tw.addEventListener("click", (e) => { e.stopPropagation(); node.classList.toggle("open"); });
-    row.append(tw, el("div", "brand-name", brand.name), el("div", "count", String(brand.count)));
+    const count = filtering && hit.models.length !== brand.count
+      ? hit.models.length + "/" + brand.count
+      : String(brand.count);
+    row.append(tw, el("div", "brand-name", brand.name), el("div", "count", count));
     row.addEventListener("click", () => { node.classList.add("open"); go(brand.slug); });
     node.appendChild(row);
 
     const kidbox = el("div", "brand-kids");
-    for (const m of kids) {
+    for (const m of hit.models) {
       const leaf = el("div", "leaf");
       leaf.dataset.slug = m.slug;
       if (state.brand === brand.slug && state.model === m.slug) leaf.classList.add("sel");
@@ -447,14 +796,14 @@ function renderTree() {
 
   host.appendChild(frag);
   if (!shownBrands) host.appendChild(el("div", "empty", "No matches"));
-  $("brandCount").textContent = state.query
+  $("brandCount").textContent = filtering
     ? shownBrands + " brands · " + shownModels + " models"
     : state.index.total_brands + " brands";
 }
 
 function syncTreeSelection() {
   document.querySelectorAll("#tree .brand").forEach((n) => {
-    const on = n.dataset.slug === state.brand;
+    const on = n.dataset.all ? !state.brand : n.dataset.slug === state.brand;
     n.classList.toggle("sel", on);
     if (on) n.classList.add("open");
     n.querySelectorAll(".leaf").forEach((l) =>
@@ -465,84 +814,110 @@ function syncTreeSelection() {
 }
 
 /* -------------------------------------------------------------- model list */
+/* Rows that survive search + patterns + facets, sorted. `brand` null sweeps the
+   whole catalogue. Rows are {m, b} so the all-brands list can label its cards. */
 function visibleModels(brand) {
-  let list = brand.models.slice();
-  if (state.type !== "all") list = list.filter((m) => m.type === state.type);
-  if (state.currentOnly) list = list.filter((m) => m.avail === "current");
-  if (state.query) {
-    const q = state.query;
-    list = list.filter((m) =>
-      (m.model || "").toLowerCase().includes(q) || (m.subtitle || "").toLowerCase().includes(q));
+  const q = state.query;
+  const groups = brand ? [brand] : state.index.brands;
+  const rows = [];
+  for (const b of groups) {
+    const brandHit = !q || b.name.toLowerCase().includes(q) || b.slug.toLowerCase().includes(q);
+    for (const m of b.models) {
+      if (!patternPass(m) || !facetPass(m)) continue;
+      if (!brandHit && !textPass(m)) continue;
+      rows.push({ m, b });
+    }
   }
-  const byName = (a, b) => (a.model || "").localeCompare(b.model || "", undefined, { numeric: true });
+  const byName = (x, y) =>
+    (x.m.model || "").localeCompare(y.m.model || "", undefined, { numeric: true });
+  const byBrandName = (x, y) => x.b.name.localeCompare(y.b.name) || byName(x, y);
   const sorters = {
-    name: byName,
-    price: (a, b) => (a.msrp ?? Infinity) - (b.msrp ?? Infinity) || byName(a, b),
-    "price-desc": (a, b) => (b.msrp ?? -1) - (a.msrp ?? -1) || byName(a, b),
-    year: (a, b) => (b.year ?? -1) - (a.year ?? -1) || byName(a, b),
+    name: brand ? byName : byBrandName,
+    price: (x, y) => (x.m.msrp ?? Infinity) - (y.m.msrp ?? Infinity) || byName(x, y),
+    "price-desc": (x, y) => (y.m.msrp ?? -1) - (x.m.msrp ?? -1) || byName(x, y),
+    year: (x, y) => (y.m.year ?? -1) - (x.m.year ?? -1) || byName(x, y),
   };
-  return list.sort(sorters[state.sort] || byName);
+  return rows.sort(sorters[state.sort] || byName);
+}
+
+function modelCard(m, brand, showBrand) {
+  const card = el("div", "card");
+  card.dataset.slug = m.slug;
+  if (state.brand === brand.slug && state.model === m.slug) card.classList.add("sel");
+
+  const thumb = el("div", "thumb");
+  if (m.thumb) {
+    const img = el("img");
+    img.loading = "lazy";
+    img.src = m.thumb;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    thumb.appendChild(img);
+  }
+
+  const info = el("div", "info");
+  if (showBrand) info.appendChild(el("div", "brandline", brand.name));
+  info.appendChild(el("div", "title", m.model || m.slug));
+  if (m.subtitle) info.appendChild(el("div", "desc", m.subtitle));
+
+  const meta = el("div", "meta");
+  meta.appendChild(el("span", "tag type t-" + (m.type || "unknown"), cap(m.type || "unknown")));
+  if (m.msrp != null) meta.appendChild(el("span", "tag price", money(m.msrp)));
+  if (m.avail === "discontinued") meta.appendChild(el("span", "tag disc", "Discontinued"));
+  if (m.tube) meta.appendChild(el("span", "tag", "Tube"));
+  if (m.multi) meta.appendChild(el("span", "tag", "Multipattern"));
+  if (m.stereo) meta.appendChild(el("span", "tag", "Stereo"));
+  if (m.set) meta.appendChild(el("span", "tag", "Set"));
+  if (m.year) meta.appendChild(el("span", "tag", String(m.year)));
+  info.appendChild(meta);
+
+  card.append(thumb, info);
+  card.addEventListener("click", () => go(brand.slug, m.slug));
+  return card;
 }
 
 function renderModels() {
   const host = $("models");
-  const brand = state.byBrand.get(state.brand);
+  const brand = state.byBrand.get(state.brand) || null;
   host.innerHTML = "";
 
-  if (!brand) {
-    $("modelHead").textContent = "Models";
-    $("modelCount").textContent = "";
-    $("filters").hidden = true;
-    host.appendChild(el("div", "empty", "Pick a brand"));
-    return;
-  }
-
   $("filters").hidden = false;
-  $("modelHead").textContent = brand.name;
-  const list = visibleModels(brand);
-  $("modelCount").textContent = list.length === brand.count
-    ? brand.count + " models"
-    : list.length + " of " + brand.count;
+  $("modelHead").textContent = brand ? brand.name : "All microphones";
 
-  if (!list.length) { host.appendChild(el("div", "empty", "No models match the filters")); return; }
+  const rows = visibleModels(brand);
+  const total = brand ? brand.count : state.index.total_models;
+  $("modelCount").textContent = rows.length === total
+    ? total.toLocaleString() + " models"
+    : rows.length.toLocaleString() + " of " + total.toLocaleString();
 
-  const frag = document.createDocumentFragment();
-  for (const m of list) {
-    const card = el("div", "card");
-    card.dataset.slug = m.slug;
-    if (state.model === m.slug) card.classList.add("sel");
+  if (!rows.length) { host.appendChild(el("div", "empty", "No models match the filters")); return; }
 
-    const thumb = el("div", "thumb");
-    if (m.thumb) {
-      const img = el("img");
-      img.loading = "lazy";
-      img.src = m.thumb;
-      img.alt = "";
-      img.addEventListener("error", () => img.remove());
-      thumb.appendChild(img);
+  /* The all-brands sweep can be 1,700 cards — hand them out a page at a time,
+     appending in place so the scroll position survives "show more". */
+  let drawn = 0;
+  const more = el("button", "showmore");
+  more.type = "button";
+
+  const draw = () => {
+    const stop = Math.min(drawn + PAGE, rows.length);
+    const frag = document.createDocumentFragment();
+    for (; drawn < stop; drawn++) {
+      frag.appendChild(modelCard(rows[drawn].m, rows[drawn].b, !brand));
     }
+    host.insertBefore(frag, more.isConnected ? more : null);
+    state.limit = drawn;
+    const left = rows.length - drawn;
+    if (left) {
+      more.textContent = "Show " + Math.min(PAGE, left) + " more · " + left.toLocaleString() + " left";
+      if (!more.isConnected) host.appendChild(more);
+    } else {
+      more.remove();
+    }
+  };
 
-    const info = el("div", "info");
-    info.appendChild(el("div", "title", m.model || m.slug));
-    if (m.subtitle) info.appendChild(el("div", "desc", m.subtitle));
-
-    const meta = el("div", "meta");
-    const type = el("span", "tag type t-" + (m.type || "unknown"), cap(m.type || "unknown"));
-    meta.appendChild(type);
-    if (m.msrp != null) meta.appendChild(el("span", "tag price", money(m.msrp)));
-    if (m.avail === "discontinued") meta.appendChild(el("span", "tag disc", "Discontinued"));
-    if (m.tube) meta.appendChild(el("span", "tag", "Tube"));
-    if (m.multi) meta.appendChild(el("span", "tag", "Multipattern"));
-    if (m.stereo) meta.appendChild(el("span", "tag", "Stereo"));
-    if (m.set) meta.appendChild(el("span", "tag", "Set"));
-    if (m.year) meta.appendChild(el("span", "tag", String(m.year)));
-    info.appendChild(meta);
-
-    card.append(thumb, info);
-    card.addEventListener("click", () => go(brand.slug, m.slug));
-    frag.appendChild(card);
-  }
-  host.appendChild(frag);
+  more.addEventListener("click", draw);
+  const target = Math.min(Math.max(state.limit, PAGE), rows.length);
+  while (drawn < target) draw();
 }
 
 /* ------------------------------------------------------------------ detail */
@@ -846,9 +1221,7 @@ function buildDetail(mic) {
   if (has(cls.tags)) {
     const wrap = el("div", "badges");
     for (const t of cls.tags) {
-      const chip = el("span", "tag");
-      chip.appendChild(t.url ? extLink(t.url, t.name) : document.createTextNode(t.name));
-      wrap.appendChild(chip);
+      wrap.appendChild(el("span", "tag", typeof t === "string" ? t : t.name));
     }
     root.appendChild(section("Tags", wrap));
   }
@@ -907,17 +1280,21 @@ function parsePermalink(url) {
 
 /* ----------------------------------------------------------------- routing */
 function go(brand, model) {
-  location.hash = "#/" + encodeURIComponent(brand) + (model ? "/" + encodeURIComponent(model) : "");
+  location.hash = brand
+    ? "#/" + encodeURIComponent(brand) + (model ? "/" + encodeURIComponent(model) : "")
+    : "#/";
 }
 
 function route() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
   const [brand, model] = parts;
-  const brandChanged = brand !== state.brand;
-  state.brand = state.byBrand.has(brand) ? brand : null;
+  const next = state.byBrand.has(brand) ? brand : null;
+  const brandChanged = next !== state.brand;
+  state.brand = next;
   state.model = state.brand && model ? model : null;
 
-  if (brandChanged) { state.type = "all"; syncChips(); }
+  if (brandChanged) state.limit = PAGE;
+  syncChips();
   renderModels();
   syncTreeSelection();
   const card = document.querySelector("#models .card.sel");
@@ -928,8 +1305,20 @@ function route() {
 function syncChips() {
   document.querySelectorAll("#filters .chip[data-type]").forEach((c) =>
     c.classList.toggle("on", c.dataset.type === state.type));
+  document.querySelectorAll("#filters .chip[data-trait]").forEach((c) =>
+    c.classList.toggle("on", state.traits.has(c.dataset.trait)));
   document.querySelectorAll("#filters .chip[data-avail]").forEach((c) =>
     c.classList.toggle("on", state.currentOnly));
+  $("form").value = state.form;
+  $("form").classList.toggle("on", state.form !== "all");
+  $("price").value = state.price;
+  $("price").classList.toggle("on", state.price !== "any");
+  $("reset").hidden = !filtersActive();
+  document.querySelectorAll("#patbar .pat").forEach((b) => {
+    const on = state.patterns.has(b.dataset.key);
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
 }
 
 /* ------------------------------------------------------------------ events */
@@ -939,21 +1328,48 @@ $("search").addEventListener("input", (e) => {
   const v = e.target.value.trim().toLowerCase();
   searchTimer = setTimeout(() => {
     state.query = v;
-    renderTree();
-    renderModels();
+    applyFilters();
   }, 120);
 });
+
+$("patbar").addEventListener("click", (e) => {
+  const btn = e.target.closest(".pat");
+  if (!btn) return;
+  const key = btn.dataset.key;
+  if (state.patterns.has(key)) state.patterns.delete(key);
+  else state.patterns.add(key);
+  applyFilters();
+});
+
+/* Any facet change re-filters both panes and rewinds the paged list. */
+function applyFilters() {
+  state.limit = PAGE;
+  syncChips();
+  renderTree();
+  syncTreeSelection();
+  renderModels();
+}
 
 $("filters").addEventListener("click", (e) => {
   const chip = e.target.closest(".chip");
   if (!chip) return;
-  if (chip.dataset.type) state.type = chip.dataset.type;
-  else if (chip.dataset.avail) state.currentOnly = !state.currentOnly;
-  syncChips();
-  renderModels();
+  if (chip.id === "reset") clearFilters();
+  else if (chip.dataset.type) state.type = chip.dataset.type;
+  else if (chip.dataset.trait) {
+    if (state.traits.has(chip.dataset.trait)) state.traits.delete(chip.dataset.trait);
+    else state.traits.add(chip.dataset.trait);
+  } else if (chip.dataset.avail) state.currentOnly = !state.currentOnly;
+  applyFilters();
 });
 
-$("sort").addEventListener("change", (e) => { state.sort = e.target.value; renderModels(); });
+$("form").addEventListener("change", (e) => { state.form = e.target.value; applyFilters(); });
+$("price").addEventListener("change", (e) => { state.price = e.target.value; applyFilters(); });
+
+$("sort").addEventListener("change", (e) => {
+  state.sort = e.target.value;
+  state.limit = PAGE;
+  renderModels();
+});
 
 $("theme").addEventListener("click", () => {
   const now = document.documentElement.getAttribute("data-theme");

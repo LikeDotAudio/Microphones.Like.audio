@@ -25,6 +25,24 @@ def safe_slug(value):
     return re.sub(r"[^A-Za-z0-9._-]", "_", value)
 
 
+def patterns_of(mic):
+    """Every polar pattern a mic offers.
+
+    classification.pattern_icons collapses switchable mics down to a single
+    "9 polar patterns" icon, so union it with the per-pattern spec rows — that
+    is what makes a C 414 answer to both Cardioid and Omnidirectional.
+    """
+    found = []
+    for name in mic["classification"].get("pattern_icons") or []:
+        if name not in found:
+            found.append(name)
+    for row in mic["specifications"].get("pickup_patterns") or []:
+        name = row.get("pattern_base") or row.get("pattern")
+        if name and name != "None" and name not in found:
+            found.append(name)
+    return found
+
+
 def model_row(mic):
     """The compact record the index carries for every microphone."""
     ident = mic["identity"]
@@ -44,7 +62,7 @@ def model_row(mic):
         "avail": price.get("availability"),
         "msrp": price.get("msrp_amount"),
         "year": mic["content"].get("release_year"),
-        "patterns": cls.get("pattern_icons") or [],
+        "patterns": patterns_of(mic),
         "thumb": photo.get("thumb_url"),
     }
 

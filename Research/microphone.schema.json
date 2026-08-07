@@ -108,16 +108,8 @@
         },
         "tags": {
           "type": "array",
-          "description": "Site tag vocabulary; 393 distinct values observed, present on 94% of pages. Top values: condenser, side-address, large-diaphragm, transformerless, end-address, transformer-coupled, multipattern, dynamic, hpf, tube. Full frequency table in audit_report.json -> tags.",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["name"],
-            "properties": {
-              "name": { "type": "string" },
-              "url": { "type": ["string", "null"] }
-            }
-          }
+          "description": "Site tag vocabulary as plain strings, deduplicated, in page order; 393 distinct values observed, present on 94% of pages. Top values: condenser, side-address, large-diaphragm, transformerless, end-address, transformer-coupled, multipattern, dynamic, hpf, tube. Full frequency table in audit_report.json -> tags.",
+          "items": { "type": "string" }
         }
       }
     },
