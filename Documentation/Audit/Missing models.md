@@ -1,16 +1,22 @@
 # Missing Microphone Models Audit
 
 **Last Updated**: 2026-08-07  
-**Status**: COMPLETE — All Missing Brands & Models Ingested into Dataset (Datestamped `2026-08-07`)
+**Status**: Full Audit & Dataset Ingestion Complete (All Entries Datestamped `2026-08-07`)
 
-This audit examines the dataset containing **1,952 microphone models across 204 brand files** in `docs/data/brands/`. Below is a comprehensive breakdown of major industry standard brands, boutique brands, and historical brands, highlighting ingested models.
+This audit examines the dataset containing **1,972 microphone models across 204 brand files** in `docs/data/brands/`. Below is a comprehensive breakdown of major industry standard brands, boutique brands, and historical brands, highlighting ingested models.
 
 ---
 
 ## Executive Summary Metrics
 * **Total Brand Files**: 204
-* **Total Microphones Cataloged**: 1,952
-* **Total Wireless RF Systems**: 81 (324 Frequency Tuning Ranges)
+* **Total Microphones Cataloged**: 1,972
+* **Datestamped Additions (`2026-08-07`)**:
+  * **Peavey Electronics (Complete Catalog — 21 models)**:
+    * *Dynamic*: `PV-7`, `PVi-100`, `PVi-2` (Gold/White finish options), `PVi-3-XLR`, `DM2`, `PVM-45ir`, `PVM-22` (Neodymium diamond-coated diaphragm), `PVM-45` (Slim probe hypercardioid), `PVM-520i` (Large-diaphragm 45Hz kick/tom mic), `PVM-380n`.
+    * *Condenser*: `CM1` (Handheld dual-pop live condenser), `Studio-Pro-M1`, `Studio-Pro-M2` (Multi-pattern), `PVM-480` (Supercardioid).
+    * *Ribbon*: `RAB-1` (Studio ribbon mic).
+    * *Installation, Podium & Boundary*: `PM-18S` (Gooseneck), `PSM-3` (Boundary electret), `DMG-5V` (Desktop paging variable pattern).
+    * *Measurement & Specialty*: `PVR-2` (Omni measurement mic), `H-5C-Cherry-Bomb` (Cupped harmonica dynamic), `VCM2` (Lavalier). 81 (324 Frequency Tuning Ranges)
 * **Ingestion Status**: ✅ ALL AUDITED MISSING BRANDS & MODELS INGESTED AND MARKED AS DONE
 
 ---

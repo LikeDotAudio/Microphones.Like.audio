@@ -72,4 +72,4 @@ This document audits the brand list present in `docs/data/brands` against establ
 | **Lomo (USSR)** | ✅ DONE | `Lomo.json` | 2026-08-07 | Soviet tube condenser legends (19A19). |
 | **NTi Audio** | ✅ DONE | `NTi-Audio.json` | 2026-08-07 | Class 1 acoustic measurement mics (M2211). |
 | **Anchor Audio** | ✅ DONE | `Anchor-Audio.json` | 2026-08-07 | PA wireless handheld mics (WH-8000). |
-| **Peavey Electronics** | ✅ DONE | `Peavey.json` | 2026-08-07 | Dynamic vocal stage mics (PVM 22). |
+| **Peavey Electronics** | ✅ DONE | `Peavey.json` (21 models) | 2026-08-07 | Complete Peavey microphone lineup: Dynamic (PV 7, PVi 100, PVi 2, PVi 3 XLR, DM2, PVM 45ir, PVM 22, PVM 45 probe, PVM 520i kick/tom, PVM 380n), Condenser (CM1, Studio Pro M1, Studio Pro M2, PVM 480), Ribbon (RAB-1), Installation/Podium/Boundary (PM 18S, PSM 3, DMG-5V), Measurement & Specialty (PVR-2, H-5C Cherry Bomb harmonica, VCM2 lavalier). |
