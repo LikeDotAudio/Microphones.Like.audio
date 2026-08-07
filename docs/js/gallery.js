@@ -6,11 +6,10 @@
  * fetched here; the only cost is the photos, which the CDN serves and the
  * browser fetches lazily as the grid scrolls into view.
  *
- * Groups are handed out a manufacturer at a time rather than all 1,800 tiles at
- * once, so the first paint stays cheap on a phone. */
+ * The whole catalogue is drawn in one pass — no paging — so a scroll is a
+ * scroll. */
 
 import { $, el } from "./dom.js";
-import { PAGE } from "./config.js";
 import { go } from "./hash.js";
 import { state } from "./state.js";
 
@@ -88,35 +87,11 @@ export function renderGallery() {
     return;
   }
 
-  const page = PAGE();
-  const more = el("button", "showmore");
-  more.type = "button";
-
-  /* Whole manufacturers at a time — a group cut in half would read as two
-     brands. The page size is a floor on the tiles added, not a ceiling. */
-  let at = 0, tiles = 0;
-  const draw = () => {
-    const frag = document.createDocumentFragment();
-    let added = 0;
-    while (at < groups.length && added < page) {
-      frag.appendChild(groupNode(groups[at]));
-      added += groups[at].models.length;
-      at++;
-    }
-    tiles += added;
-    host.insertBefore(frag, more.isConnected ? more : null);
-    state.galLimit = at;
-    const left = groups.length - at;
-    if (left) {
-      more.textContent = "Show more · " + (shown - tiles).toLocaleString() + " models left";
-      if (!more.isConnected) host.appendChild(more);
-    } else {
-      more.remove();
-    }
-  };
-
-  more.addEventListener("click", draw);
-  /* Coming back to the tab redraws what was on screen before, not just page one. */
-  const target = Math.max(state.galLimit, 1);
-  while (at < groups.length && at < target) draw();
+  /* Every manufacturer, every tile, one pass — scrolling the whole catalogue is
+     the point of this view, and a "show more" button in the middle of it is a
+     wall. The DOM cost is one <img> per model; none of them fetch anything
+     until the browser scrolls them close to the viewport. */
+  const frag = document.createDocumentFragment();
+  for (const g of groups) frag.appendChild(groupNode(g));
+  host.appendChild(frag);
 }

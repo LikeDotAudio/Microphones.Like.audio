@@ -50,7 +50,9 @@ docs/build_data.py       splits the dataset into the files the app fetches
 docs/build_rf.py         normalises the wireless dataset
 docs/build_x230.py       validates and ships the profile
 docs/x230_read.py        reads each record against the profile
+docs/fetch_media.py      mirrors the catalogue's images into Media/
 docs/data/               generated — not committed
+Media/<brand>/<model>/   fetched images — not committed
 ```
 
 The app ships no vocabulary of its own. Filter chips, dropdown options, table
@@ -82,6 +84,24 @@ notice instead of data.
 `pip install jsonschema` is optional: with it, the build validates the X230
 profile against its schema. Without it, the build's own cross-reference checks
 still run.
+
+## Media mirror
+
+```bash
+python3 docs/fetch_media.py --limit 5 --dry-run    # see the plan
+python3 docs/fetch_media.py                        # ~6,200 files, ~25 minutes
+```
+
+Every photo, thumbnail and frequency-response chart the catalogue points at,
+saved as `Media/<brand>/<model>/`, with a `manifest.json` per model recording
+which file came from which URL. Runs are resumable — files already on disk are
+never fetched twice — and anything that fails lands in `Media/_failures.tsv`.
+
+The images belong to recordinghacks.com and are mirrored under the same terms
+as the dataset above, so `Media/` is gitignored and never published. The
+defaults are deliberately unhurried: four workers, a quarter-second between
+requests, `robots.txt` honoured. `--workers` and `--delay` will change that;
+the source's bandwidth bill is the reason not to.
 
 ## Browse
 

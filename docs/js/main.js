@@ -112,7 +112,6 @@ $("galSearch").addEventListener("input", (e) => {
   const v = e.target.value.trim().toLowerCase();
   galSearchTimer = setTimeout(() => {
     state.galQuery = v;
-    state.galLimit = 0;      // a new query starts at the top of the grid again
     renderGallery();
   }, 120);
 });
