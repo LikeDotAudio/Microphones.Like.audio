@@ -37,17 +37,13 @@ def safe_slug(value):
 
 
 def patterns_of(mic):
-    """Every polar pattern a mic offers.
-
-    classification.pattern_icons collapses switchable mics down to a single
-    "9 polar patterns" icon, so union it with the per-pattern spec rows — that
-    is what makes a C 414 answer to both Cardioid and Omnidirectional.
-    """
     found = []
-    for name in mic["classification"].get("pattern_icons") or []:
+    cls = mic.get("classification") or {}
+    specs = mic.get("specifications") or {}
+    for name in cls.get("pattern_icons") or []:
         if name not in found:
             found.append(name)
-    for row in mic["specifications"].get("pickup_patterns") or []:
+    for row in specs.get("pickup_patterns") or specs.get("patterns") or []:
         name = row.get("pattern_base") or row.get("pattern")
         if name and name != "None" and name not in found:
             found.append(name)

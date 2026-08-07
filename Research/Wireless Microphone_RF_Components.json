@@ -1205,6 +1205,28 @@
         "imd_3_tx_3rd": "0.099",
         "imd_5": "0.099"
       }
+    },
+    "D Squared (D2)": {
+      "A1": {
+        "range": "A1 (470-537 MHz)",
+        "start_freq": "470.0",
+        "end_freq": "537.0",
+        "Frequency Range (MHz)": "470.0 - 537.0",
+        "Bandwidth (MHz)": "67.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      },
+      "B1": {
+        "range": "B1 (537-608 MHz)",
+        "start_freq": "537.0",
+        "end_freq": "608.0",
+        "Frequency Range (MHz)": "537.0 - 608.0",
+        "Bandwidth (MHz)": "71.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
     }
   },
   "Micron": {
@@ -2417,6 +2439,50 @@
         "imd_3_tx_3rd": "Default",
         "imd_5": "Default"
       }
+    },
+    "Digital 6000": {
+      "A1-A4": {
+        "range": "A1-A4 (470-558 MHz)",
+        "start_freq": "470.0",
+        "end_freq": "558.0",
+        "Frequency Range (MHz)": "470.0 - 558.0",
+        "Bandwidth (MHz)": "88.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      },
+      "A5-A8": {
+        "range": "A5-A8 (550-638 MHz)",
+        "start_freq": "550.0",
+        "end_freq": "638.0",
+        "Frequency Range (MHz)": "550.0 - 638.0",
+        "Bandwidth (MHz)": "88.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
+    },
+    "EW-DX": {
+      "S1-7": {
+        "range": "S1-7 (470-550 MHz)",
+        "start_freq": "470.0",
+        "end_freq": "550.0",
+        "Frequency Range (MHz)": "470.0 - 550.0",
+        "Bandwidth (MHz)": "80.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      },
+      "Q1-9": {
+        "range": "Q1-9 (470-550 MHz)",
+        "start_freq": "470.0",
+        "end_freq": "550.0",
+        "Frequency Range (MHz)": "470.0 - 550.0",
+        "Bandwidth (MHz)": "80.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
     }
   },
   "Shure": {
@@ -3243,6 +3309,82 @@
         "imd_3_tx_3rd": "Disabled",
         "imd_5": "Disabled"
       }
+    },
+    "Axient Digital ADX": {
+      "G57": {
+        "range": "G57 (470-614 MHz)",
+        "start_freq": "470.0",
+        "end_freq": "614.0",
+        "Frequency Range (MHz)": "470.0 - 614.0",
+        "Bandwidth (MHz)": "144.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      },
+      "K54": {
+        "range": "K54 (606-663 MHz)",
+        "start_freq": "606.0",
+        "end_freq": "663.0",
+        "Frequency Range (MHz)": "606.0 - 663.0",
+        "Bandwidth (MHz)": "57.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
+    },
+    "SLX-D": {
+      "G58": {
+        "range": "G58 (470-514 MHz)",
+        "start_freq": "470.0",
+        "end_freq": "514.0",
+        "Frequency Range (MHz)": "470.0 - 514.0",
+        "Bandwidth (MHz)": "44.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      },
+      "H55": {
+        "range": "H55 (514-558 MHz)",
+        "start_freq": "514.0",
+        "end_freq": "558.0",
+        "Frequency Range (MHz)": "514.0 - 558.0",
+        "Bandwidth (MHz)": "44.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      },
+      "J52": {
+        "range": "J52 (558-602 MHz)",
+        "start_freq": "558.0",
+        "end_freq": "602.0",
+        "Frequency Range (MHz)": "558.0 - 602.0",
+        "Bandwidth (MHz)": "44.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
+    },
+    "QLX-D": {
+      "G50": {
+        "range": "G50 (470-534 MHz)",
+        "start_freq": "470.0",
+        "end_freq": "534.0",
+        "Frequency Range (MHz)": "470.0 - 534.0",
+        "Bandwidth (MHz)": "64.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      },
+      "H50": {
+        "range": "H50 (534-598 MHz)",
+        "start_freq": "534.0",
+        "end_freq": "598.0",
+        "Frequency Range (MHz)": "534.0 - 598.0",
+        "Bandwidth (MHz)": "64.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
     }
   },
   "Sony": {
@@ -3842,6 +3984,84 @@
         "imd_3": "Disabled",
         "imd_3_tx_3rd": "Disabled",
         "imd_5": "Disabled"
+      }
+    }
+  },
+  "AKG Acoustics": {
+    "DMS300": {
+      "2.4GHz": {
+        "range": "2.4GHz Global Band",
+        "start_freq": "2400.0",
+        "end_freq": "2483.5",
+        "Frequency Range (MHz)": "2400.0 - 2483.5",
+        "Bandwidth (MHz)": "83.5",
+        "vhf_uhf": "2.4GHz",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
+    },
+    "WMS470": {
+      "Band 1": {
+        "range": "Band 1 (480-530 MHz)",
+        "start_freq": "480.0",
+        "end_freq": "530.0",
+        "Frequency Range (MHz)": "480.0 - 530.0",
+        "Bandwidth (MHz)": "50.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      },
+      "Band 7": {
+        "range": "Band 7 (500-530 MHz)",
+        "start_freq": "500.0",
+        "end_freq": "530.0",
+        "Frequency Range (MHz)": "500.0 - 530.0",
+        "Bandwidth (MHz)": "30.0",
+        "vhf_uhf": "UHF",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
+    }
+  },
+  "Line 6": {
+    "XD-V75": {
+      "2.4GHz": {
+        "range": "2.4GHz Digital Band",
+        "start_freq": "2400.0",
+        "end_freq": "2483.5",
+        "Frequency Range (MHz)": "2400.0 - 2483.5",
+        "Bandwidth (MHz)": "83.5",
+        "vhf_uhf": "2.4GHz",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
+    }
+  },
+  "DJI": {
+    "DJI Mic 2": {
+      "2.4GHz": {
+        "range": "2.4GHz Dual-Channel",
+        "start_freq": "2400.0",
+        "end_freq": "2483.5",
+        "Frequency Range (MHz)": "2400.0 - 2483.5",
+        "Bandwidth (MHz)": "83.5",
+        "vhf_uhf": "2.4GHz",
+        "num_presets": "1000",
+        "prebuilt": "true"
+      }
+    }
+  },
+  "Hollyland": {
+    "Lark Max": {
+      "2.4GHz": {
+        "range": "2.4GHz Digital Band",
+        "start_freq": "2400.0",
+        "end_freq": "2483.5",
+        "Frequency Range (MHz)": "2400.0 - 2483.5",
+        "Bandwidth (MHz)": "83.5",
+        "vhf_uhf": "2.4GHz",
+        "num_presets": "1000",
+        "prebuilt": "true"
       }
     }
   }
