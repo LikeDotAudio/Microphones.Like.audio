@@ -1,7 +1,7 @@
 /* The right-hand pane: one microphone, rendered in full. */
 
 import { $, cap, el, has, num, money } from "./dom.js";
-import { kitTag, typeTag } from "./models.js";
+import { kitTag, typeTags } from "./models.js";
 import { buildChain } from "./chain.js";
 import { cfg } from "./config.js";
 import { drawDetails, drawDiagram, drawLegend } from "./diagram.js";
@@ -220,7 +220,7 @@ function buildDetail(mic, bundle) {
 
   const facts = el("div", "facts");
   const badges = el("div", "badges");
-  badges.appendChild(typeTag(cls.transducer_type, cls.transducer_types));
+  typeTags(cls.transducer_type, cls.transducer_types).forEach((t) => badges.appendChild(t));
   if (cls.form_factor) badges.appendChild(el("span", "tag", cls.form_factor));
   if (cls.is_tube) badges.appendChild(el("span", "tag", "Tube"));
   if (cls.is_multipattern) badges.appendChild(el("span", "tag", "Multipattern"));

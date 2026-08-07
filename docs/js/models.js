@@ -1,21 +1,32 @@
 /* The middle pane: one card per microphone, paged. */
 
 import { $, cap, el, money } from "./dom.js";
-import { PAGE } from "./config.js";
+import { PAGE, cfg } from "./config.js";
 import { visibleModels } from "./filters.js";
 import { go } from "./hash.js";
 import { state } from "./state.js";
 
-/* The transducer chip. A kit of one type reads as that type; a mixed kit names
-   what is in the box — "Condenser + Dynamic" — rather than hiding three
-   microphones behind the word "mixed". `types` is the kit's list, absent on a
-   microphone. */
-export function typeTag(type, types) {
+/* The transducer chips. One for what the record is, and — for a kit of more
+   than one type — a second naming what is in the box.
+ *
+ * The first chip is labelled from the vocabulary rather than from the raw key,
+ * so the tag on a record reads exactly like the filter chip that selects it:
+ * click "Mixed kit" and every result is tagged "Mixed kit". `types` is the
+ * kit's own list of member types, absent on a microphone. */
+const typeLabel = (key) => {
+  const entry = ((cfg() || {}).types || []).find((t) => t.key === key);
+  return (entry && entry.label) || cap(key);
+};
+
+export function typeTags(type, types) {
   const key = type || "unknown";
-  const label = key === "mixed" && types && types.length
-    ? types.map(cap).join(" + ")
-    : cap(key);
-  return el("span", "tag type t-" + key, label);
+  const chip = el("span", "tag type t-" + key, typeLabel(key));
+  if (key !== "mixed" || !types || !types.length) return [chip];
+  chip.title = "A kit of more than one transducer type";
+  /* Named in the order the box holds them, most microphones first. */
+  const mix = el("span", "tag mix", types.map(cap).join(" + "));
+  mix.title = "Every transducer type in this kit — it answers to each of these chips";
+  return [chip, mix];
 }
 
 /* "4-mic kit" — the count is what distinguishes a stereo pair from a drum pack
@@ -49,7 +60,7 @@ export function modelCard(m, brand, showBrand) {
   if (m.subtitle) info.appendChild(el("div", "desc", m.subtitle));
 
   const meta = el("div", "meta");
-  meta.appendChild(typeTag(m.type, m.kit && m.kit.types));
+  typeTags(m.type, m.kit && m.kit.types).forEach((t) => meta.appendChild(t));
   if (m.msrp != null) meta.appendChild(el("span", "tag price", money(m.msrp)));
   if (m.avail === "discontinued") meta.appendChild(el("span", "tag disc", "Discontinued"));
   if (m.tube) meta.appendChild(el("span", "tag", "Tube"));

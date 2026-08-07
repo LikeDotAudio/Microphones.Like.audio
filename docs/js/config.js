@@ -8,7 +8,8 @@
 let config = null;
 
 export async function loadConfig() {
-  const res = await fetch("data/config.json");
+  // Revalidated rather than reused blind — see the note in js/data.js.
+  const res = await fetch("data/config.json", { cache: "no-cache" });
   if (!res.ok) throw new Error("HTTP " + res.status + " loading data/config.json");
   config = await res.json();
   return config;

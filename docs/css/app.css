@@ -376,6 +376,8 @@ blockquote cite { display: block; margin-top: 5px; font-size: 12px; color: var(-
    A kit is a box of microphones, so it says how many and then hands the page
    over to them: one chain per included model, each headed by its own name. */
 .tag.kit { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+/* What is in a mixed kit, beside the "Mixed kit" tag that names it. */
+.tag.mix { background: transparent; border: 1px solid var(--s7); color: var(--s7); }
 /* The lines the pane uses to say where a drawing or a spec came from. */
 .detail .note { font-size: 11.5px; color: var(--faint); margin: 6px 0 10px; max-width: 82ch; }
 .kitchain + .kitchain { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
