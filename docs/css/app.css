@@ -594,6 +594,8 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
 .dg .dg-cap { font-size: 9.5px; fill: var(--muted); }
 .dg .dg-muted { fill: var(--faint); font-style: italic; }
 .dg .dg-term { font-size: 10px; font-weight: 600; text-anchor: start; }
+/* The name of one parallel path — LEFT/RIGHT, MID/SIDE — beside its row. */
+.dg .dg-row { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-anchor: start; fill: var(--faint); }
 .dg .dg-left { text-anchor: start; }
 .dg .dg-feed { font-size: 9.5px; text-anchor: start; font-weight: 600; }
 
