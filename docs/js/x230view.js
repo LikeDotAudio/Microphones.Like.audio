@@ -26,7 +26,7 @@ function card(title, node, cls) {
 }
 
 /* The four-part binding, drawn from a real row so the example cannot go stale. */
-function bindingExample(p) {
+function bindingExample(p, blockName) {
   const wrap = el("div", "x230bind4");
   const step = (label, value, note) => {
     const s = el("div", "x230step");
@@ -37,7 +37,7 @@ function bindingExample(p) {
   };
   step("AES42 parameter", p.aes42_name, "what the microphone world calls it");
   step("Class", p.oca.class, "what kind of control it is");
-  step("Block", p.block, "where in the device it lives");
+  step("Block", blockName(p.block), "where in the device it lives");
   step("Role name", p.oca.role_name, "what a controller searches for");
   step("Property", (p.oca.property || []).join(" / "), "the field carrying the value");
   return wrap;
@@ -64,19 +64,23 @@ function diagramCard(d) {
   }
 
   const ports = el("div", "x230ports");
-  const list = (label, items) => {
+  /* An input flows from the port inwards, an output from the chain outwards, so
+     the arrows have to run opposite ways or the drawing lies. */
+  const list = (label, items, inbound) => {
     if (!items || !items.length) return;
     const row = el("div", "x230port");
     row.appendChild(el("span", "k", label));
     items.forEach((p) => {
+      const via = p.via || [];
+      const path = inbound ? [p.label].concat(via) : via.concat([p.label]);
       const chip = el("span", "tag f-" + (p.flow || "audio") + (p.control_point ? " cp" : ""),
-        (p.via && p.via.length ? p.via.join(" → ") + " → " : "") + p.label);
+        path.join(" → "));
       row.appendChild(chip);
     });
     ports.appendChild(row);
   };
-  list("In", d.inputs);
-  list("Out", d.outputs);
+  list("In", d.inputs, true);
+  list("Out", d.outputs, false);
   if (d.control) {
     const row = el("div", "x230port");
     row.appendChild(el("span", "k", "Control"));
@@ -155,9 +159,9 @@ function build(p) {
   /* --- the binding, worked --- */
   const pad = p.parameters.find((x) => x.key === "pad") || p.parameters[0];
   const ex = el("div");
-  ex.appendChild(bindingExample(pad));
+  ex.appendChild(bindingExample(pad, blockName));
   ex.appendChild(el("p", "x230sum2",
-    "Read left to right: “" + pad.aes42_name + "” resolves to a " + pad.oca.class +
+    "Read left to right: “" + pad.aes42_name + "” resolves to " + pad.oca.class +
     " at role " + pad.oca.role_name + " inside the " + blockName(pad.block) +
     " block, read and written through " + (pad.oca.property || []).join(" / ") + ". " +
     (pad.oca.remarks || "").replace(/\n/g, " ")));

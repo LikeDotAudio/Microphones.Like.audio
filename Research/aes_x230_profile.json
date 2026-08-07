@@ -39,7 +39,7 @@
         "The **block** says where in the device it lives. AES70 blocks are reusable groupings; X230 names four for the audio path — Preamp, Processor, Utility, ADC — and six for radio gear. Device identity is not in a block at all: it hangs off the device manager.",
         "The **role name** is the label the object carries inside its block, and it is what a controller actually searches for: role 'Pad' in block 'Preamp'.",
         "The **property** is the field on that class holding the value. OcaSwitch carries it in Position, OcaGain in Value, OcaMediaClock in RatesSupported and CurrentRate.",
-        "So 'the pad' resolves to: OcaSwitch, in the Preamp block, at role Pad, read and written through Position — and the profile adds that the position *names* are the gain values, which is what lets a controller show '-10 dB' instead of 'position 2'."
+        "So 'the pad' resolves to: OcaSwitch, in the Preamp block, at role Pad, read and written through Position — and the profile adds that the position **names** are the gain values, which is what lets a controller show '-10 dB' instead of 'position 2'."
       ]
     },
     {
@@ -63,7 +63,7 @@
       "heading": "How an object list is written",
       "body": [
         "The workbook's Help sheet defines the convention for listing a real device's objects: one header row per object, then one row for each element of that object worth documenting — basic functional properties, read-only properties whose read-only status matters, elements that are unimplemented or partially implemented, and elements with semantics an ordinary controller would not expect.",
-        "Each row is typed. O marks an object; P a property; R a read-only property; M a method; E an event; and N an element that is *not implemented* — the code exists so that a device can positively declare an optional element missing, rather than leaving a controller to guess. Indent depth carries nesting: the root block one notch, objects inside it two, and so on. Items an ordinary application should not see are flagged ADV.",
+        "Each row is typed. O marks an object; P a property; R a read-only property; M a method; E an event; and N an element that is **not implemented** — the code exists so that a device can positively declare an optional element missing, rather than leaving a controller to guess. Indent depth carries nesting: the root block one notch, objects inside it two, and so on. Items an ordinary application should not see are flagged ADV.",
         "The N code is the reason this repository's device view distinguishes 'absent' from 'unknown'. The profile itself takes the position that a missing element is a fact to be recorded, not a gap."
       ]
     },

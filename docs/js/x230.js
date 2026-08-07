@@ -144,6 +144,33 @@ function blockStates(rec, kind) {
    Returning nothing at all leaves the parameter unknown with a generic reason —
    which is the correct answer far more often than not. */
 
+/* Device-level identity is the one part of the profile both record kinds can
+   answer, so it lives outside the microphone/radio split. */
+const COMMON = {
+  manufacturer: (rec) => ({
+    value: rec.identity.manufacturer,
+    access: "read-only",
+    evidence: [["identity.manufacturer", rec.identity.manufacturer]],
+  }),
+
+  serial_number: () => ({
+    status: "unknown",
+    why: "A per-unit value. This catalogue describes models, so there is nothing that could fill it.",
+  }),
+
+  user_label: () => ({
+    status: "unknown",
+    why: "Set by whoever installs the device. Not a catalogue fact at all.",
+  }),
+
+  type: (rec) => ({
+    value: rec.classification.subtitle || null,
+    evidence: [["classification.subtitle", rec.classification.subtitle || "—"]],
+    why: "X230 never settled what Type means — its class cell reads “?”. The nearest thing the " +
+      "catalogue has is the record's own descriptor, shown here for comparison.",
+  }),
+};
+
 const MIC = {
   pad: (rec) => switchedList(rec, "pads", "pad",
     (p) => (p.value_db != null ? num(p.value_db, " dB") : p.raw)),
@@ -221,30 +248,6 @@ const MIC = {
   resolution: () => ({ status: "unknown", why: "Word length is not published on these pages." }),
   latency: () => ({ status: "unknown", why: "Conversion latency is not published on these pages." }),
 
-  manufacturer: (rec) => ({
-    value: rec.identity.manufacturer,
-    access: "read-only",
-    evidence: [["identity.manufacturer", rec.identity.manufacturer]],
-  }),
-
-  serial_number: () => ({
-    status: "unknown",
-    why: "A per-unit value. This catalogue describes models, so there is nothing that could fill it.",
-  }),
-
-  user_label: () => ({
-    status: "unknown",
-    why: "Set by whoever installs the device. Not a catalogue fact at all.",
-  }),
-
-  type(rec) {
-    return {
-      value: rec.classification.subtitle || null,
-      evidence: [["classification.subtitle", rec.classification.subtitle || "—"]],
-      why: "X230 never settled what Type means — its class cell reads “?”. The nearest thing the " +
-        "catalogue has is the page's own descriptor, shown here for comparison.",
-    };
-  },
 };
 
 const RF = {
@@ -304,7 +307,7 @@ const rfBlocksOf = (param) => Object.keys(param.applicability || {});
 export function readDevice(rec) {
   const kind = rec.classification && rec.classification.kind === "rf" ? "rf" : "microphone";
   const blocks = blockStates(rec, kind);
-  const table = kind === "rf" ? RF : MIC;
+  const table = Object.assign({}, COMMON, kind === "rf" ? RF : MIC);
   const rows = [];
 
   for (const p of profile.parameters) {
@@ -418,7 +421,7 @@ export function readDevice(rec) {
 const STATUS_LABEL = {
   mapped: "mapped",
   absent: "not implemented",
-  unknown: "NULL",
+  unknown: "unknown",       /* the value cell prints the NULL; saying it twice is noise */
   "not-applicable": "n/a",
   "undefined-in-profile": "open in draft",
 };
