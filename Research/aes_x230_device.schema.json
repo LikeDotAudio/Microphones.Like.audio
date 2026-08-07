@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://microphones.like.audio/schemas/aes_x230_device.json",
+  "title": "AES-X230 device profile report",
+  "description": "One catalogue record read against the X230 profile — the object the device page renders. For every parameter the profile defines, this says whether the catalogue can populate it, and where the value came from. It is deliberately not a conformance certificate: no microphone in this catalogue publishes an AES70 device model, so a mapped parameter means 'the catalogue knows this value', not 'the device exposes this object'. Where the two differ, `access` says so. Produced by docs/js/x230.js from Research/aes_x230_profile.json (see its `crosswalk` key) and a record matching microphone.schema.json or rf_component.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile_id", "subject", "blocks", "parameters", "coverage"],
+
+  "properties": {
+    "profile_id": { "const": "AES-X230" },
+    "profile_revision": { "type": ["string", "null"] },
+
+    "subject": {
+      "type": "object",
+      "description": "The record being read.",
+      "additionalProperties": false,
+      "required": ["kind", "full_name"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["microphone", "rf"],
+          "description": "Which schema the record follows. It decides which half of the profile is evaluated and which is marked not applicable."
+        },
+        "brand_slug": { "type": ["string", "null"] },
+        "model_slug": { "type": ["string", "null"] },
+        "full_name": { "type": "string" }
+      }
+    },
+
+    "control": {
+      "type": "object",
+      "description": "The honest caveat, computed rather than assumed: whether anything in the record suggests the device is controllable at all.",
+      "additionalProperties": false,
+      "required": ["aes70_declared", "note"],
+      "properties": {
+        "aes70_declared": {
+          "type": "boolean",
+          "description": "True only if the record actually claims AES70/OCA control. Across this catalogue it is always false — the source is a specification database, not a device model."
+        },
+        "remote_control_points": {
+          "type": "integer",
+          "description": "How many mapped parameters are reachable over a network rather than by hand."
+        },
+        "note": { "type": "string" }
+      }
+    },
+
+    "coverage": {
+      "type": "object",
+      "description": "Counts across parameters[], so a device can be compared with another at a glance.",
+      "additionalProperties": false,
+      "required": ["total", "mapped", "absent", "unknown", "not_applicable", "undefined_in_profile", "applicable", "mapped_pct"],
+      "properties": {
+        "total": { "type": "integer", "description": "Every parameter the profile defines." },
+        "mapped": { "type": "integer" },
+        "absent": { "type": "integer" },
+        "unknown": { "type": "integer" },
+        "not_applicable": { "type": "integer" },
+        "undefined_in_profile": { "type": "integer" },
+        "applicable": {
+          "type": "integer",
+          "description": "total minus not_applicable and undefined_in_profile — the parameters this device could meaningfully answer."
+        },
+        "mapped_pct": {
+          "type": ["number", "null"],
+          "description": "mapped / applicable as a percentage. Null when applicable is 0."
+        }
+      }
+    },
+
+    "blocks": {
+      "type": "array",
+      "description": "Whether the device instantiates each profile block. Decided once here, and every parameter inside a block that is not instantiated is marked not-applicable — so the reasoning is stated once rather than repeated down the table.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "name", "status", "why"],
+        "properties": {
+          "key": { "type": "string", "description": "blocks[].key from the profile." },
+          "name": { "type": "string" },
+          "domain": { "type": "string", "enum": ["audio", "rf", "device"] },
+          "status": {
+            "type": "string",
+            "enum": ["instantiated", "not-instantiated", "unknown"],
+            "description": "'unknown' where the record cannot settle it either way."
+          },
+          "why": { "type": "string", "description": "The evidence or inference behind the status, in one sentence." }
+        }
+      }
+    },
+
+    "parameters": {
+      "type": "array",
+      "description": "One entry per profile parameter, in profile order.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "profile_name", "status", "value"],
+        "properties": {
+          "key": { "type": "string", "description": "parameters[].key from the profile." },
+          "profile_name": { "type": "string" },
+          "section": { "type": "string", "enum": ["audio", "rf"] },
+          "block": { "type": ["string", "null"] },
+          "oca_class": { "type": ["string", "null"] },
+          "role_name": { "type": ["string", "null"] },
+          "property": { "type": "array", "items": { "type": "string" } },
+          "unit": { "type": ["string", "null"] },
+
+          "status": {
+            "type": "string",
+            "enum": ["mapped", "absent", "unknown", "not-applicable", "undefined-in-profile"],
+            "description": "mapped — the catalogue supplies a value. absent — the catalogue positively records the function is missing, the equivalent of the profile's own 'N' code. unknown — applicable, but nothing in the catalogue can answer it; value is null. not-applicable — the block is not instantiated. undefined-in-profile — X230 left the binding open, so there is nothing to conform to."
+          },
+          "value": {
+            "type": ["string", "null"],
+            "description": "Display-ready value, or null. Null is the point of this report, not a gap in it: it is how the model says the catalogue cannot answer."
+          },
+          "values": {
+            "type": "array",
+            "description": "Set here instead of `value` where the parameter is a switch with several positions — pads, patterns, low-cut frequencies.",
+            "items": { "type": "string" }
+          },
+          "access": {
+            "type": ["string", "null"],
+            "enum": ["aes70", "manual-switch", "read-only", null],
+            "description": "For a mapped parameter, whether it is a real control point. 'manual-switch' is the common case here and is the gap between knowing a value and being able to set it."
+          },
+          "evidence": {
+            "type": "array",
+            "description": "The record fields actually read, so any row can be traced back to data.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "value"],
+              "properties": {
+                "path": { "type": "string", "description": "Dotted path into the source record." },
+                "value": { "type": "string" }
+              }
+            }
+          },
+          "why": {
+            "type": ["string", "null"],
+            "description": "Why the status is what it is. Required reading for anything other than 'mapped'."
+          }
+        }
+      }
+    }
+  }
+}
