@@ -46,7 +46,6 @@ IVORY_EDGE = "#cdc3ad"    # their shadowed side
 # vanish on black.
 DARK = "#2a231b"          # yoke, stem, body
 DARK_LIT = "#4c3f31"      # the lit face of the same
-DARK_DEEP = "#191410"     # its shadowed side
 SPLASH_BG = "#14110d"     # matches the app's dark background
 
 # ----------------------------------------------------------------- geometry
