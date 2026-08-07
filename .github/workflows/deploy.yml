@@ -49,6 +49,7 @@ jobs:
             **/.git*
             **/.git*/**
             **/build_data.py
+            **/build_rf.py
             **/vocabulary.py
             **/__pycache__/**
             **/README.md
