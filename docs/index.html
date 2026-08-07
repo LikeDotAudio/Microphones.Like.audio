@@ -250,6 +250,9 @@
   .tag.price { color: var(--text); font-variant-numeric: tabular-nums; }
   .tag.disc { color: #d97706; }
   .tag.type { background: var(--tc, var(--chip)); color: #fff; }
+  .tag.tagbtn { border: 1px solid transparent; cursor: pointer; font: inherit; font-size: 10.5px; }
+  .tag.tagbtn:hover { border-color: var(--accent); color: var(--text); }
+  .chip.tagchip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .card .brandline { font-size: 11px; color: var(--faint); }
 
   /* ---------- detail ---------- */
@@ -324,6 +327,38 @@
     letter-spacing: .07em; color: var(--faint); font-weight: 600;
   }
   .statsview h2.vh:first-child { margin-top: 0; }
+
+  /* ---------- tag vocabulary ---------- */
+  .tagbar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .tagbar input {
+    flex: 1; min-width: 180px; max-width: 340px; padding: 6px 10px; font-size: 13px;
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .tagbar input:focus { outline: none; border-color: var(--accent); }
+  .tagbar select {
+    font-size: 12px; padding: 5px 7px; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 7px;
+  }
+  .taggrid {
+    display: grid; gap: 6px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+  .tagcell {
+    display: flex; align-items: baseline; gap: 8px; text-align: left;
+    padding: 7px 10px; font-size: 13px; cursor: pointer; color: var(--text);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  }
+  .tagcell:hover { border-color: var(--accent); }
+  .tagcell.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tagcell .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tagcell .c { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .tagcell.on .c { color: #fff; opacity: .85; }
+  .tagcell .bar {
+    position: absolute; left: 0; bottom: 0; height: 2px; background: var(--accent); opacity: .35;
+  }
+  .tagcell { position: relative; overflow: hidden; }
+  .tagcell.on .bar { background: #fff; opacity: .5; }
 
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 10px; }
   .tile {
@@ -435,6 +470,7 @@
   <div class="brandmark">Microphone Browser<small>recordinghacks dataset</small></div>
   <nav class="nav">
     <a class="navlink" id="navBrowse" href="#/">Browse</a>
+    <a class="navlink" id="navTags" href="#/tags">Tags</a>
     <a class="navlink" id="navStats" href="#/stats">Statistics</a>
   </nav>
   <input id="search" type="search" placeholder="Search brands and models…" autocomplete="off" spellcheck="false">
@@ -485,6 +521,7 @@
         <button class="chip" data-trait="multi">Multipattern</button>
         <button class="chip" data-trait="stereo">Stereo</button>
         <button class="chip" data-avail="current">Current</button>
+        <button class="chip on tagchip" id="tagChip" hidden></button>
         <button class="chip clear" id="reset" hidden>Clear filters</button>
         <select id="sort" class="push">
           <option value="name">Name</option>
@@ -502,6 +539,23 @@
     <div class="pane-body" id="detail"><div class="empty">Pick a microphone</div></div>
   </div>
 </main>
+
+<section id="tags" class="statsview" hidden>
+  <div class="statswrap">
+    <h2 class="vh">Tag vocabulary</h2>
+    <div class="tagbar">
+      <input id="tagSearch" type="search" placeholder="Filter tags…" autocomplete="off" spellcheck="false">
+      <select id="tagSort">
+        <option value="count">Most used</option>
+        <option value="count-asc">Least used</option>
+        <option value="name">A → Z</option>
+        <option value="name-desc">Z → A</option>
+      </select>
+      <span class="stat" id="tagStat"></span>
+    </div>
+    <div class="taggrid" id="tagGrid"></div>
+  </div>
+</section>
 
 <section id="stats" class="statsview" hidden></section>
 <div id="tip" class="tip" hidden></div>
@@ -662,6 +716,33 @@ const PRICE_BANDS = {
 /* How many cards the all-brands list renders per page. */
 const PAGE = 120;
 
+/* ---- tag vocabulary ---------------------------------------------------- */
+/* tags.json is 190 KB of membership lists and only the tag view and an active
+   tag filter need it, so it loads on first use rather than at boot. */
+let tagsPromise = null;
+
+function ensureTags() {
+  if (!tagsPromise) {
+    tagsPromise = fetch("data/tags.json")
+      .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then((data) => {
+        state.tagList = data.tags;
+        state.tagMembers = new Map(data.tags.map((t) => [t.name, new Set(t.mics)]));
+        return data;
+      })
+      .catch((err) => { tagsPromise = null; throw err; });
+  }
+  return tagsPromise;
+}
+
+const micKey = (m, brand) => brand.slug + "/" + m.slug;
+
+function tagPass(m, brand) {
+  if (!state.tag) return true;
+  const members = state.tagMembers.get(state.tag);
+  return !!members && members.has(micKey(m, brand));
+}
+
 function pricePass(m) {
   if (state.price === "any") return true;
   if (state.price === "none") return m.msrp == null;
@@ -671,17 +752,17 @@ function pricePass(m) {
 }
 
 /* Everything the facet controls ask of a model, AND-ed together. */
-function facetPass(m) {
+function facetPass(m, brand) {
   if (state.type !== "all" && m.type !== state.type) return false;
   if (state.form !== "all" && m.form !== state.form) return false;
   if (state.currentOnly && m.avail !== "current") return false;
   for (const t of state.traits) if (!m[t]) return false;
-  return pricePass(m);
+  return pricePass(m) && tagPass(m, brand);
 }
 
 function filtersActive() {
   return state.type !== "all" || state.form !== "all" || state.price !== "any" ||
-    state.traits.size > 0 || state.currentOnly || state.patterns.size > 0;
+    state.traits.size > 0 || state.currentOnly || state.patterns.size > 0 || !!state.tag;
 }
 
 function clearFilters() {
@@ -691,6 +772,7 @@ function clearFilters() {
   state.traits.clear();
   state.currentOnly = false;
   state.patterns.clear();
+  state.tag = null;
 }
 
 /* ------------------------------------------------------------------ state */
@@ -701,6 +783,11 @@ const state = {
   query: "",
   patterns: new Set(),     // selected polar-pattern keys, OR-ed together
   scope: null,             // brand the middle pane lists; null = the whole catalogue
+  tag: null,               // active site tag, chosen from the Tags view
+  tagList: null,           // [{name, count, mics}] once tags.json has loaded
+  tagMembers: new Map(),   // tag -> Set("<brand>/<model>")
+  tagQuery: "",
+  tagSort: "count",
   brand: null,             // brand of the selected mic
   model: null,
   type: "all",
@@ -756,7 +843,7 @@ function brandView(brand) {
   const q = state.query;
   const brandHit = !q || brand.name.toLowerCase().includes(q) || brand.slug.toLowerCase().includes(q);
   const models = brand.models.filter((m) =>
-    patternPass(m) && facetPass(m) && (brandHit || textPass(m)));
+    patternPass(m) && facetPass(m, brand) && (brandHit || textPass(m)));
   return models.length ? { brandHit, models } : null;
 }
 
@@ -846,7 +933,7 @@ function visibleModels(brand) {
   for (const b of groups) {
     const brandHit = !q || b.name.toLowerCase().includes(q) || b.slug.toLowerCase().includes(q);
     for (const m of b.models) {
-      if (!patternPass(m) || !facetPass(m)) continue;
+      if (!patternPass(m) || !facetPass(m, b)) continue;
       if (!brandHit && !textPass(m)) continue;
       rows.push({ m, b });
     }
@@ -1271,7 +1358,12 @@ function buildDetail(mic) {
   if (has(cls.tags)) {
     const wrap = el("div", "badges");
     for (const t of cls.tags) {
-      wrap.appendChild(el("span", "tag", typeof t === "string" ? t : t.name));
+      const name = typeof t === "string" ? t : t.name;
+      const chip = el("button", "tag tagbtn", name);
+      chip.type = "button";
+      chip.title = "Browse everything tagged “" + name + "”";
+      chip.addEventListener("click", () => openTag(name));
+      wrap.appendChild(chip);
     }
     root.appendChild(section("Tags", wrap));
   }
@@ -1843,20 +1935,89 @@ function go(brand, model) {
   location.hash = hashFor(brand, model);
 }
 
+/* ================================================================== TAG VIEW */
+function renderTagView() {
+  const grid = $("tagGrid");
+  grid.innerHTML = "";
+
+  if (!state.tagList) {
+    $("tagStat").textContent = "";
+    grid.appendChild(el("div", "empty", "Loading tags…"));
+    ensureTags().then(renderTagView).catch((err) => {
+      grid.innerHTML = "";
+      grid.appendChild(el("div", "empty", "Could not load data/tags.json — " + err.message));
+    });
+    return;
+  }
+
+  const q = state.tagQuery;
+  const rows = state.tagList.filter((t) => !q || t.name.toLowerCase().includes(q));
+  const byName = (a, b) => a.name.localeCompare(b.name);
+  const sorters = {
+    count: (a, b) => b.count - a.count || byName(a, b),
+    "count-asc": (a, b) => a.count - b.count || byName(a, b),
+    name: byName,
+    "name-desc": (a, b) => byName(b, a),
+  };
+  rows.sort(sorters[state.tagSort] || sorters.count);
+
+  $("tagStat").textContent = q
+    ? rows.length + " of " + state.tagList.length + " tags"
+    : state.tagList.length + " tags · " +
+      state.tagList.reduce((n, t) => n + t.count, 0).toLocaleString() + " assignments";
+
+  if (!rows.length) { grid.appendChild(el("div", "empty", "No tag matches “" + q + "”")); return; }
+
+  /* Bar widths are relative to the most-used tag in the *whole* vocabulary, so
+     filtering the list doesn't silently rescale what a bar means. */
+  const max = state.tagList[0] ? Math.max(...state.tagList.map((t) => t.count)) : 1;
+  const frag = document.createDocumentFragment();
+  for (const t of rows) {
+    const cell = el("button", "tagcell");
+    cell.type = "button";
+    cell.dataset.tag = t.name;
+    if (state.tag === t.name) cell.classList.add("on");
+    cell.append(el("span", "n", t.name), el("span", "c", t.count.toLocaleString()));
+    const bar = el("span", "bar");
+    bar.style.width = Math.max(2, Math.round((t.count / max) * 100)) + "%";
+    cell.appendChild(bar);
+    cell.title = t.name + " · " + t.count + " microphone" + (t.count === 1 ? "" : "s");
+    frag.appendChild(cell);
+  }
+  grid.appendChild(frag);
+}
+
+/* Selecting a tag hands you back to the browse panes with it applied. */
+function openTag(name) {
+  ensureTags().then(() => {
+    state.tag = state.tagMembers.has(name) ? name : null;
+    state.limit = PAGE;
+    state.scope = null;      // a tag spans brands, so widen to the whole catalogue
+    if (location.hash !== "#/") location.hash = "#/";
+    showView("browse");
+    applyFilters();
+  });
+}
+
 let statsBuilt = false;
 let routed = false;      // has route() run once? distinguishes deep links from clicks
 
 function showView(name) {
   const stats = name === "stats";
-  document.querySelector("main").hidden = stats;
+  const tags = name === "tags";
+  const browse = !stats && !tags;
+  document.querySelector("main").hidden = !browse;
   $("stats").hidden = !stats;
-  // Search and the pattern buttons drive the browse panes only; the explorer
-  // carries its own filters.
-  $("search").hidden = stats;
-  $("patbar").hidden = stats;
-  $("navBrowse").classList.toggle("on", !stats);
+  $("tags").hidden = !tags;
+  // Search and the pattern buttons drive the browse panes only; the other
+  // views carry their own filters.
+  $("search").hidden = !browse;
+  $("patbar").hidden = !browse;
+  $("navBrowse").classList.toggle("on", browse);
+  $("navTags").classList.toggle("on", tags);
   $("navStats").classList.toggle("on", stats);
   if (stats && !statsBuilt) { renderStats(); statsBuilt = true; }
+  if (tags) renderTagView();
 }
 
 /* Point the middle pane at one brand, or at the whole catalogue when null. */
@@ -1872,6 +2033,9 @@ function route() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
 
   if (parts[0] === "stats") { showView("stats"); return; }
+  if (parts[0] === "tags") { showView("tags"); return; }
+  /* #/tag/<name> is the shareable form of "browse everything tagged X". */
+  if (parts[0] === "tag" && parts[1]) { showView("browse"); openTag(parts[1]); return; }
   showView("browse");
 
   const [brand, model] = parts;
@@ -1910,6 +2074,9 @@ function syncChips() {
   $("form").classList.toggle("on", state.form !== "all");
   $("price").value = state.price;
   $("price").classList.toggle("on", state.price !== "any");
+  const tagChip = $("tagChip");
+  tagChip.hidden = !state.tag;
+  if (state.tag) tagChip.textContent = "tag: " + state.tag + "  ✕";
   $("reset").hidden = !filtersActive();
   document.querySelectorAll("#patbar .pat").forEach((b) => {
     const on = state.patterns.has(b.dataset.key);
@@ -1950,12 +2117,25 @@ $("filters").addEventListener("click", (e) => {
   const chip = e.target.closest(".chip");
   if (!chip) return;
   if (chip.id === "reset") clearFilters();
+  else if (chip.id === "tagChip") state.tag = null;
   else if (chip.dataset.type) state.type = chip.dataset.type;
   else if (chip.dataset.trait) {
     if (state.traits.has(chip.dataset.trait)) state.traits.delete(chip.dataset.trait);
     else state.traits.add(chip.dataset.trait);
   } else if (chip.dataset.avail) state.currentOnly = !state.currentOnly;
   applyFilters();
+});
+
+let tagSearchTimer;
+$("tagSearch").addEventListener("input", (e) => {
+  clearTimeout(tagSearchTimer);
+  const v = e.target.value.trim().toLowerCase();
+  tagSearchTimer = setTimeout(() => { state.tagQuery = v; renderTagView(); }, 120);
+});
+$("tagSort").addEventListener("change", (e) => { state.tagSort = e.target.value; renderTagView(); });
+$("tagGrid").addEventListener("click", (e) => {
+  const cell = e.target.closest(".tagcell");
+  if (cell) openTag(cell.dataset.tag);
 });
 
 $("form").addEventListener("change", (e) => { state.form = e.target.value; applyFilters(); });

@@ -120,9 +120,27 @@ def main():
     with open(index_path, "w", encoding="utf-8") as fh:
         json.dump(index, fh, ensure_ascii=False, separators=(",", ":"))
 
-    size = os.path.getsize(index_path) / 1024
+    # The tag vocabulary is only needed once the tag view opens, so it ships as
+    # its own file keyed "<brand_slug>/<model_slug>" — the same id the browser
+    # builds from an index row.
+    members = defaultdict(list)
+    for mic in mics:
+        key = mic["source"]["brand_slug"] + "/" + mic["source"]["model_slug"]
+        for tag in mic["classification"].get("tags") or []:
+            name = tag["name"] if isinstance(tag, dict) else tag
+            if name:
+                members[name].append(key)
+
+    tags = [{"name": n, "count": len(v), "mics": v} for n, v in members.items()]
+    tags.sort(key=lambda t: (-t["count"], t["name"].lower()))
+    tags_path = os.path.join(OUT, "tags.json")
+    with open(tags_path, "w", encoding="utf-8") as fh:
+        json.dump({"total_tags": len(tags), "tags": tags}, fh,
+                  ensure_ascii=False, separators=(",", ":"))
+
     print("%d brands / %d models" % (len(brands), len(mics)))
-    print("index.json  %.0f KB" % size)
+    print("index.json  %.0f KB" % (os.path.getsize(index_path) / 1024))
+    print("tags.json   %.0f KB / %d tags" % (os.path.getsize(tags_path) / 1024, len(tags)))
     print("brands/     %d files" % len(brands))
 
 
