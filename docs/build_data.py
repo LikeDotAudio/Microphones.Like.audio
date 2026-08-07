@@ -72,13 +72,16 @@ def types_of(mic):
 
 def model_row(mic):
     """The compact record the index carries for every microphone."""
-    ident = mic["identity"]
-    cls = mic["classification"]
-    price = mic["pricing"]
-    photo = mic["media"].get("primary_photo") or {}
+    ident = mic.get("identity") or {}
+    cls = mic.get("classification") or {}
+    price = mic.get("pricing") or {}
+    media = mic.get("media") or {}
+    photo = media.get("primary_photo") or {}
+    content = mic.get("content") or {}
+    source = mic.get("source") or {}
     kit = mic.get("kit")
     row = {
-        "slug": mic["source"]["model_slug"],
+        "slug": source.get("model_slug", "unknown"),
         "model": ident.get("model"),
         "subtitle": cls.get("subtitle"),
         "type": cls.get("transducer_type"),
@@ -89,9 +92,9 @@ def model_row(mic):
         "set": cls.get("product_type") == "set",
         "avail": price.get("availability"),
         "msrp": price.get("msrp_amount"),
-        "year": mic["content"].get("release_year"),
+        "year": content.get("release_year"),
         "patterns": patterns_of(mic),
-        "thumb": photo.get("thumb_url"),
+        "thumb": photo.get("thumb_url") if isinstance(photo, dict) else None,
     }
     if kit:
         # Enough for a card and the type filter; the contents themselves live in
