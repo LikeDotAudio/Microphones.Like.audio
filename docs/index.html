@@ -1774,6 +1774,93 @@ const EXP_COLS = [
   { key: "avail", label: "Status" },
 ];
 
+/* ---- full CSV export ---------------------------------------------------- */
+function csvCell(v) {
+  const s = Array.isArray(v) ? v.filter((x) => x != null && x !== "").join("; ")
+    : v == null ? "" : typeof v === "boolean" ? (v ? "yes" : "no") : String(v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+/* One column per field worth reading in a spreadsheet. Per-pattern figures
+   (sensitivity, frequency response) are emitted as "Pattern: value" lists so a
+   multipattern mic keeps all of its numbers in one row. */
+const CSV_COLS = (() => {
+  const pat = (mic) => mic.specifications.pickup_patterns || [];
+  const perPattern = (mic, fn) => pat(mic)
+    .map((p) => { const v = fn(p); return v == null ? null : (pat(mic).length > 1 ? p.pattern + ": " + v : String(v)); })
+    .filter(Boolean);
+  const cap = (mic) => mic.specifications.capsule || {};
+  const phys = (mic) => mic.specifications.physical || {};
+  const pwr = (mic) => mic.specifications.power || {};
+  const imp = (mic) => mic.specifications.impedance || {};
+  const spl = (mic) => mic.specifications.spl_noise || {};
+
+  return [
+    { label: "Brand", get: (m) => m.identity.manufacturer },
+    { label: "Model", get: (m) => m.identity.model },
+    { label: "Full name", get: (m) => m.identity.full_name },
+    { label: "Subtitle", get: (m) => m.classification.subtitle },
+    { label: "Product type", get: (m) => m.classification.product_type },
+    { label: "Transducer type", get: (m) => m.classification.transducer_type },
+    { label: "Form factor", get: (m) => m.classification.form_factor },
+    { label: "Tube", get: (m) => !!m.classification.is_tube },
+    { label: "Multipattern", get: (m) => !!m.classification.is_multipattern },
+    { label: "Stereo", get: (m) => !!m.classification.is_stereo },
+    { label: "Tags", get: (m) => (m.classification.tags || []).map((t) => (typeof t === "string" ? t : t.name)) },
+    { label: "Patterns", get: (m) => pat(m).map((p) => p.pattern) },
+    { label: "Pattern icons", get: (m) => m.classification.pattern_icons || [] },
+    { label: "Sensitivity (mV/Pa)", get: (m) => perPattern(m, (p) => p.sensitivity_mv_pa) },
+    { label: "Frequency response (Hz)", get: (m) => perPattern(m, (p) => {
+        const f = p.frequency_response || {};
+        return f.low_hz != null && f.high_hz != null ? f.low_hz + "–" + f.high_hz : f.raw;
+      }) },
+    { label: "Pattern spec (raw)", get: (m) => pat(m).map((p) => p.raw) },
+    { label: "Pads", get: (m) => (m.specifications.pads || []).map((p) => p.raw) },
+    { label: "Filters", get: (m) => (m.specifications.filters || []).map((f) => f.raw) },
+    { label: "Diaphragm diameter (mm)", get: (m) => cap(m).diaphragm_diameter_mm },
+    { label: "Capsule diameter (mm)", get: (m) => cap(m).capsule_diameter_mm },
+    { label: "Diaphragm gauge (µm)", get: (m) => cap(m).diaphragm_gauge_microns },
+    { label: "Capsule (raw)", get: (m) => cap(m).raw },
+    { label: "Impedance (ohms)", get: (m) => imp(m).ohms },
+    { label: "Impedance category", get: (m) => imp(m).category },
+    { label: "Impedance (raw)", get: (m) => imp(m).raw },
+    { label: "Max SPL (dB)", get: (m) => spl(m).max_spl_db },
+    { label: "Max SPL note", get: (m) => spl(m).max_spl_note },
+    { label: "Self noise (dBA)", get: (m) => spl(m).self_noise_dba },
+    { label: "Self noise note", get: (m) => spl(m).self_noise_note },
+    { label: "SPL/noise (raw)", get: (m) => spl(m).raw },
+    { label: "Weight (g)", get: (m) => (phys(m).weight || {}).grams },
+    { label: "Weight (oz)", get: (m) => (phys(m).weight || {}).ounces },
+    { label: "Length (mm)", get: (m) => (phys(m).length || {}).mm },
+    { label: "Length (in)", get: (m) => (phys(m).length || {}).inches },
+    { label: "Max diameter (mm)", get: (m) => (phys(m).max_diameter || {}).mm },
+    { label: "Max diameter (in)", get: (m) => (phys(m).max_diameter || {}).inches },
+    { label: "Interfaces", get: (m) => (m.specifications.interfaces || []).map((i) => i.raw) },
+    { label: "Requires phantom power", get: (m) => !!pwr(m).requires_phantom_power },
+    { label: "Phantom voltage (V)", get: (m) => pwr(m).phantom_voltage_v || [] },
+    { label: "Includes tube PSU", get: (m) => !!pwr(m).includes_tube_power_supply },
+    { label: "Battery compartment", get: (m) => !!pwr(m).has_battery_compartment },
+    { label: "Battery type", get: (m) => pwr(m).battery_type },
+    { label: "Power (other)", get: (m) => pwr(m).other || [] },
+    { label: "Power (raw)", get: (m) => pwr(m).raw },
+    { label: "MSRP", get: (m) => m.pricing.msrp_amount },
+    { label: "Currency", get: (m) => m.pricing.currency },
+    { label: "MSRP (raw)", get: (m) => m.pricing.msrp_raw },
+    { label: "Availability", get: (m) => m.pricing.availability },
+    { label: "Release year", get: (m) => m.content.release_year },
+    { label: "Related microphones", get: (m) => (m.related_microphones || []).map((r) => r.name) },
+    { label: "Documentation links", get: (m) => (m.links.documentation || []).map((l) => l.url) },
+    { label: "Review links", get: (m) => (m.links.reviews_news || []).map((l) => l.url) },
+    { label: "Awards", get: (m) => (m.links.awards || []).map((l) => l.title) },
+    { label: "Photo", get: (m) => (m.media.primary_photo || {}).full_url },
+    { label: "Description", get: (m) => m.content.description_text },
+    { label: "Source URL", get: (m) => m.source.url },
+    { label: "Mic id", get: (m) => m.source.mic_id },
+    { label: "Browser link", get: (m, r) =>
+        location.origin + location.pathname + hashFor(r.brandSlug, r.slug) },
+  ];
+})();
+
 function explorerRows() {
   const q = explorer.q.toLowerCase();
   const pat = explorer.pattern === "all" ? null : PATTERN_BY_KEY.get(explorer.pattern);
@@ -1897,27 +1984,34 @@ function buildExplorer() {
     }
   }
 
-  function downloadCsv() {
+  /* The index rows the explorer draws from are deliberately thin, so a full
+     export pulls the per-brand detail files for whatever is on screen first. */
+  async function downloadCsv() {
     const rows = explorerRows();
-    const cell = (v) => {
-      const s = Array.isArray(v) ? v.join("; ") : (v == null ? "" : String(v));
-      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    };
-    const lines = [EXP_COLS.map((c) => c.label).concat(["Subtitle", "Tube", "Multipattern", "Stereo", "URL"]).join(",")];
-    for (const r of rows) {
-      lines.push([
-        cell(r.brand), cell(r.model), cell(r.type), cell((r.patterns || []).map((p) => PATTERN_DISPLAY[p] || p)), cell(r.form),
-        cell(r.msrp), cell(r.year), cell(r.avail), cell(r.subtitle),
-        r.tube ? "yes" : "no", r.multi ? "yes" : "no", r.stereo ? "yes" : "no",
-        cell(location.origin + location.pathname + "#/" + encodeURIComponent(r.brandSlug) + "/" + encodeURIComponent(r.slug)),
-      ].join(","));
+    const slugs = [...new Set(rows.map((r) => r.brandSlug))];
+    const label = csv.textContent;
+    csv.disabled = true;
+    try {
+      for (let i = 0; i < slugs.length; i += 12) {
+        csv.textContent = "Loading " + Math.min(i + 12, slugs.length) + "/" + slugs.length + "…";
+        await Promise.all(slugs.slice(i, i + 12).map((s) => loadBrand(s).catch(() => null)));
+      }
+      csv.textContent = "Building CSV…";
+      const lines = [CSV_COLS.map((c) => csvCell(c.label)).join(",")];
+      for (const r of rows) {
+        const mic = (state.brandData.get(r.brandSlug) || {})[r.slug];
+        lines.push(CSV_COLS.map((c) => csvCell(mic ? c.get(mic, r) : "")).join(","));
+      }
+      const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+      const a = el("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "microphones-" + rows.length + ".csv";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } finally {
+      csv.textContent = label;
+      csv.disabled = false;
     }
-    const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const a = el("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "microphones-" + rows.length + ".csv";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
   }
 
   refresh();
@@ -2160,9 +2254,36 @@ try {
 } catch (e) {}
 
 window.addEventListener("hashchange", route);
+/* ↑/↓ walk the mics currently showing in the tree, so a filtered list can be
+   paged through from the keyboard without reaching for the mouse. */
+function stepTree(delta) {
+  let leaves = [...document.querySelectorAll("#tree .brand.open .leaf")];
+  if (!leaves.length) {
+    const first = document.querySelector("#tree .brand[data-slug]");
+    if (!first) return;
+    first.classList.add("open");
+    leaves = [...first.querySelectorAll(".leaf")];
+    if (!leaves.length) return;
+  }
+  const at = leaves.findIndex((l) => l.classList.contains("sel"));
+  const to = at < 0
+    ? (delta > 0 ? 0 : leaves.length - 1)
+    : Math.min(leaves.length - 1, Math.max(0, at + delta));
+  if (to !== at) leaves[to].click();      // reuses the leaf's own navigation
+}
+
 document.addEventListener("keydown", (e) => {
   if (e.key === "/" && e.target !== $("search")) { e.preventDefault(); $("search").focus(); }
   if (e.key === "Escape" && e.target === $("search")) { $("search").value = ""; $("search").dispatchEvent(new Event("input")); $("search").blur(); }
+
+  if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+  if (document.querySelector("main").hidden) return;          // not on the browse view
+  const t = e.target;
+  // Arrows belong to the field the user is actually editing, except the search
+  // box — typing a query then arrowing into the hits is the point.
+  if (t !== $("search") && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
+  e.preventDefault();
+  stepTree(e.key === "ArrowDown" ? 1 : -1);
 });
 
 boot();
