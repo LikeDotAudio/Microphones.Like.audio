@@ -385,6 +385,7 @@ function splitFor(mic, blocks) {
   if (!found) return null;
   const words = (key) => (cfg().chainSplits || []).find((s) => s.key === key);
   const body = blocks.filter((b) => !b.terminal);
+  if (!body.length) return null;          // nothing to run in parallel
 
   const chan = found.channels && words(found.channels);
   const elem = found.elements && words(found.elements);

@@ -179,6 +179,10 @@ export function drawDiagram(chain) {
   const svg = svgEl("svg", {
     class: "dg", viewBox: `0 0 ${width} ${height}`,
     width, height, role: "img",
+    // A pane narrower than the drawing scales it down instead of scrolling —
+    // but only so far. Below about three quarters the captions stop being
+    // legible, so past that the wrapper takes over and scrolls.
+    style: `min-width:${Math.round(width * 0.74)}px`,
     // Left-align when the canvas is narrower than the pane, rather than
     // floating the chain in the middle of an empty box.
     preserveAspectRatio: "xMinYMid meet",

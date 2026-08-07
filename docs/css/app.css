@@ -258,7 +258,10 @@ main {
 .card .brandline { font-size: 11px; color: var(--faint); }
 
 /* ---------- detail ---------- */
-.detail { padding: 20px 24px 60px; max-width: 900px; }
+/* No column cap: a wide window is width the drawing and the tables can use.
+   Only running prose gets a measure, because a 200-character line is unreadable
+   however much room there is for it. */
+.detail { padding: 20px 24px 60px; }
 .detail h1 { margin: 0 0 2px; font-size: 22px; letter-spacing: -.015em; }
 .detail .sub { color: var(--muted); margin-bottom: 12px; }
 .hero { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 18px; flex-wrap: wrap; }
@@ -277,7 +280,7 @@ section.block > h3 {
   margin: 0 0 8px; font-size: 11.5px; text-transform: uppercase;
   letter-spacing: .07em; color: var(--faint); font-weight: 600;
 }
-.kv { display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 4px 16px; }
+.kv { display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 4px 16px; max-width: 760px; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; }
 .box {
@@ -286,6 +289,7 @@ section.block > h3 {
 }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
 .prose { color: var(--text); }
+.prose p, .prose ul, .prose blockquote { max-width: 82ch; }
 .prose p { margin: 0 0 10px; }
 /* Scraped copy embeds full-size photos — keep them inside the pane. */
 .prose img { max-width: min(100%, 300px); height: auto; border-radius: 6px; margin: 4px 12px 8px 0; }
@@ -323,7 +327,9 @@ details.rawdump > summary { cursor: pointer; color: var(--muted); font-size: 12.
 
 /* ---------- statistics view ---------- */
 .statsview { flex: 1; min-height: 0; overflow-y: auto; padding: 22px 26px 70px; }
-.statswrap { max-width: 1180px; margin: 0 auto; }
+/* Wide enough for three chart columns on a large screen, still short
+   enough that a heading line does not run away from the eye. */
+.statswrap { max-width: 1560px; margin: 0 auto; }
 .statsview h2.vh {
   margin: 30px 0 12px; font-size: 12px; text-transform: uppercase;
   letter-spacing: .07em; color: var(--faint); font-weight: 600;
@@ -521,11 +527,27 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
   /* dvh so the browser's collapsing toolbar cannot push main off-screen. */
   body { height: 100dvh; }
 
-  /* The header stops being one line. Left to itself it squeezes the pattern
-     bar until it wraps into a column tall enough to shove the panes off the
-     screen; here search takes a row of its own and the pattern buttons sit
-     directly under it, scrolling sideways instead of stacking. */
+  /* Two sideways strips rather than four wrapped lines — wrapping here would
+     eat the whole quarter the model list is meant to get. */
+  .filters { padding: 6px 8px; gap: 5px; }
+  .frow {
+    flex-wrap: nowrap;
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .frow::-webkit-scrollbar { display: none; }
+  .frow > * { flex: none; }
 
+  .detail { padding: 14px 14px 50px; }
+  .statsview { padding: 16px 14px 60px; }
+}
+
+/* The header stops being one line well before the panes stop being columns:
+   a laptop window is already too narrow for it. Left to itself it squeezes
+   the pattern bar until that wraps into a column tall enough to shove the
+   panes off the screen; here search takes a row of its own and the pattern
+   buttons sit directly under it, scrolling sideways instead of stacking. */
+@media (max-width: 1180px) {
   header {
     flex-wrap: wrap;
     row-gap: 8px;
@@ -558,20 +580,6 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
   }
   .patbar::-webkit-scrollbar { display: none; }
   .pat { flex: none; }
-
-  /* Two sideways strips rather than four wrapped lines — wrapping here would
-     eat the whole quarter the model list is meant to get. */
-  .filters { padding: 6px 8px; gap: 5px; }
-  .frow {
-    flex-wrap: nowrap;
-    overflow-x: auto; overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-  .frow::-webkit-scrollbar { display: none; }
-  .frow > * { flex: none; }
-
-  .detail { padding: 14px 14px 50px; }
-  .statsview { padding: 16px 14px 60px; }
 }
 
 /* ---------- signal-chain diagram ---------- */
@@ -581,7 +589,10 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
   background: var(--panel-2); border: 1px solid var(--border);
   border-radius: 9px; margin-bottom: 9px;
 }
-.dg { display: block; min-width: 100%; }
+/* The drawing fits the pane by scaling down rather than scrolling. diagram.js
+   puts a floor on that in the element's own style — past it the captions stop
+   being readable, and a scrollbar is the better answer. */
+.dg { display: block; max-width: 100%; height: auto; }
 .dg .dg-shape { fill: var(--panel); stroke-width: 1.4; }
 .dg .dg-ant { fill: none; stroke-width: 1.4; }
 .dg .dg-line { fill: none; stroke-width: 1.6; }
@@ -702,7 +713,7 @@ details.x230na > summary { cursor: pointer; font-size: 11.5px; color: var(--fain
 details.x230na .x230row { opacity: .7; }
 
 /* --- the X230 tab --- */
-.x230wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
+.x230wrap { max-width: 1560px; margin: 0 auto; display: grid; gap: 16px; }
 /* Grid items default to min-width:auto, so one long line inside the schema
    <pre> would widen the whole column and push the cards past the page. */
 .x230wrap > * { min-width: 0; }
