@@ -12,6 +12,7 @@ import { renderRfControls, renderRfView } from "./rfview.js";
 import { renderStats } from "./stats.js";
 import { renderTagView, openTag } from "./tagview.js";
 import { renderTree, syncTreeSelection } from "./tree.js";
+import { renderX230View } from "./x230view.js";
 
 let statsBuilt = false;
 let routed = false;      // has route() run once? distinguishes deep links from clicks
@@ -20,11 +21,13 @@ export function showView(name) {
   const stats = name === "stats";
   const tags = name === "tags";
   const wireless = name === "wireless";
-  const browse = !stats && !tags && !wireless;
+  const x230 = name === "x230";
+  const browse = !stats && !tags && !wireless && !x230;
   document.querySelector("main").hidden = !browse;
   $("stats").hidden = !stats;
   $("tags").hidden = !tags;
   $("wireless").hidden = !wireless;
+  $("x230").hidden = !x230;
   // Search and the pattern buttons drive the browse panes only; the other
   // views carry their own filters.
   $("search").hidden = !browse;
@@ -33,9 +36,11 @@ export function showView(name) {
   $("navWireless").classList.toggle("on", wireless);
   $("navTags").classList.toggle("on", tags);
   $("navStats").classList.toggle("on", stats);
+  $("navX230").classList.toggle("on", x230);
   if (stats && !statsBuilt) { renderStats(); statsBuilt = true; }
   if (tags) renderTagView();
   if (wireless) { renderRfControls(); renderRfView(); }
+  if (x230) renderX230View();
 }
 
 /* Point the middle pane at one brand, or at the whole catalogue when null. */
@@ -53,6 +58,7 @@ export function route() {
   if (parts[0] === "stats") { showView("stats"); return; }
   if (parts[0] === "tags") { showView("tags"); return; }
   if (parts[0] === "wireless") { showView("wireless"); return; }
+  if (parts[0] === "x230") { showView("x230"); return; }
   /* #/tag/<name> is the shareable form of "browse everything tagged X". */
   if (parts[0] === "tag" && parts[1]) { showView("browse"); openTag(parts[1]); return; }
   showView("browse");

@@ -9,6 +9,7 @@ import { go, parsePermalink } from "./hash.js";
 import { appLink, extLink, sanitize } from "./links.js";
 import { state } from "./state.js";
 import { openTag } from "./tagview.js";
+import { x230Section } from "./x230.js";
 
 export async function renderDetail() {
   const host = $("detail");
@@ -117,6 +118,7 @@ function buildRfDetail(rec) {
   wrap.appendChild(table);
   root.appendChild(section("Tuning ranges", wrap));
 
+  root.appendChild(x230Section(rec));
   return root;
 }
 
@@ -429,6 +431,7 @@ function buildDetail(mic) {
     root.appendChild(section("Source data", det));
   }
 
+  root.appendChild(x230Section(mic));
   return root;
 }
 

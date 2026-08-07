@@ -6,6 +6,8 @@ on:
     paths:
       - "docs/**"
       - "Research/microphones.json"
+      - "Research/Wireless Microphone_RF_Components.json"
+      - "Research/aes_x230_profile.json"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
     inputs:
@@ -50,6 +52,7 @@ jobs:
             **/.git*/**
             **/build_data.py
             **/build_rf.py
+            **/build_x230.py
             **/vocabulary.py
             **/__pycache__/**
             **/README.md

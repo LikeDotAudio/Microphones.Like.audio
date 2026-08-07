@@ -20,6 +20,7 @@ import sys
 from collections import Counter, defaultdict
 
 import build_rf as rf
+import build_x230 as x230
 import vocabulary as V
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -327,6 +328,10 @@ def main():
             "systems": rf_records,
         }, fh, ensure_ascii=False, separators=(",", ":"))
 
+    # The AES-X230 profile: shipped whole, because both the X230 tab and the
+    # per-device conformance panel read it rather than carrying their own copy.
+    profile = x230.write(OUT, warnings.append)
+
     config = build_config(mics, rf_records, warnings.append)
     config_path = os.path.join(OUT, "config.json")
     with open(config_path, "w", encoding="utf-8") as fh:
@@ -338,6 +343,9 @@ def main():
     print("tags.json   %.0f KB / %d tags" % (os.path.getsize(tags_path) / 1024, len(tags)))
     print("rf.json     %.0f KB / %d ranges" %
           (os.path.getsize(rf_path) / 1024, sum(r["rf"]["range_count"] for r in rf_records)))
+    if profile:
+        print("x230.json   %.0f KB / %d parameters" %
+              (os.path.getsize(os.path.join(OUT, "x230.json")) / 1024, len(profile["parameters"])))
     print("brands/     %d files" % len(brands))
     for w in warnings:
         print("  warning: %s" % w)
