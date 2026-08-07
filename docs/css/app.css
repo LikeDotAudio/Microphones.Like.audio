@@ -21,6 +21,7 @@
   --s3: #1baf7a;  /* ribbon    */
   --s4: #eda100;  /* other     */
   --s5: #e87ba4;  /* hybrid    */
+  --s6: #7c5cd6;  /* wireless  */
   --grid: #e6e9ef;
 }
 :root:not([data-theme="light"]) {
@@ -46,6 +47,7 @@
     --s3: #199e70;
     --s4: #c98500;
     --s5: #d55181;
+    --s6: #8f74e0;
     --grid: #262b33;
   }
 }
@@ -68,6 +70,7 @@
   --s3: #199e70;
   --s4: #c98500;
   --s5: #d55181;
+  --s6: #8f74e0;
   --grid: #262b33;
 }
 
@@ -196,6 +199,7 @@ main {
 .t-ribbon    { background: var(--s3); --tc: var(--s3); }
 .t-boundary  { background: var(--s4); --tc: var(--s4); }
 .t-hybrid    { background: var(--s5); --tc: var(--s5); }
+.t-wireless  { background: var(--s6); --tc: var(--s6); }
 .t-unknown   { background: var(--faint); --tc: var(--faint); }
 
 /* ---------- model list ---------- */

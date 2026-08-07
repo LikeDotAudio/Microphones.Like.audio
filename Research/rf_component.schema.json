@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://microphones.like.audio/schemas/rf_component.json",
+  "title": "RF wireless component",
+  "description": "One wireless transmitter/receiver system, normalised from Research/Wireless Microphone_RF_Components.json. That source is nested Manufacturer -> Model -> Range; this schema keeps the same grain by making the model the record and its tuning ranges an ordered list, because a range is a variant of a system rather than a product of its own. Deliberately NOT the microphone schema: an RF system has no capsule, polar pattern or transducer, and a microphone has no tuning range or preset count.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "identity", "classification", "rf"],
+  "properties": {
+    "source": {
+      "type": "object",
+      "description": "Where the record came from, and the keys it is addressed by.",
+      "additionalProperties": false,
+      "required": ["dataset", "manufacturer_key", "model_key", "brand_slug", "model_slug"],
+      "properties": {
+        "dataset": { "type": "string", "description": "Source file name." },
+        "manufacturer_key": { "type": "string", "description": "Verbatim top-level key in the source, e.g. 'Audio Technica'." },
+        "model_key": { "type": "string", "description": "Verbatim second-level key, e.g. '4000/5000'." },
+        "brand_slug": { "type": "string", "description": "Brand this is filed under in the browser. Reuses the microphone brand slug when the manufacturer already sells mics (EV -> Electro-Voice), so wireless gear intermixes with that vendor's catalogue." },
+        "model_slug": { "type": "string", "description": "URL-safe id within the brand. Always prefixed 'rf-' so it can never collide with a microphone model slug." }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manufacturer", "model", "full_name"],
+      "properties": {
+        "manufacturer": { "type": "string", "description": "Display name, taken from the microphone brand when one matched." },
+        "model": { "type": "string" },
+        "full_name": { "type": "string" }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "component_type", "bands", "subtitle"],
+      "properties": {
+        "kind": { "const": "rf", "description": "Distinguishes these records from microphones wherever the two share a list." },
+        "component_type": { "type": "string", "description": "Always 'wireless-system' for this dataset; present so other RF component classes (antennas, distros) can join later." },
+        "bands": {
+          "type": "array",
+          "description": "Distinct VHF/UHF markers across the model's ranges. Nearly always a single value; a model spanning both keeps both.",
+          "items": { "enum": ["UHF", "VHF"] }
+        },
+        "subtitle": { "type": "string", "description": "Generated one-liner, e.g. 'UHF wireless system · 6 tuning ranges · 480–820 MHz'." }
+      }
+    },
+    "rf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["range_count", "coverage", "ranges"],
+      "properties": {
+        "range_count": { "type": "integer" },
+        "coverage": {
+          "type": "object",
+          "description": "Envelope across every range the model offers. Ranges are usually disjoint, so span_mhz is the outer envelope, not the sum of tunable width.",
+          "additionalProperties": false,
+          "required": ["start_mhz", "end_mhz", "span_mhz", "tunable_mhz"],
+          "properties": {
+            "start_mhz": { "type": ["number", "null"] },
+            "end_mhz": { "type": ["number", "null"] },
+            "span_mhz": { "type": ["number", "null"], "description": "end_mhz - start_mhz." },
+            "tunable_mhz": { "type": ["number", "null"], "description": "Sum of the individual range widths." }
+          }
+        },
+        "presets": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": { "type": ["integer", "null"] },
+            "max": { "type": ["integer", "null"] }
+          }
+        },
+        "ranges": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["key", "name", "start_mhz", "end_mhz", "band"],
+            "properties": {
+              "key": { "type": "string", "description": "Third-level key in the source." },
+              "name": { "type": "string", "description": "The range's own 'range' field; usually equal to key." },
+              "start_mhz": { "type": ["number", "null"] },
+              "end_mhz": { "type": ["number", "null"] },
+              "width_mhz": { "type": ["number", "null"] },
+              "presets": { "type": ["integer", "null"], "description": "num_presets: how many prebuilt frequencies the range carries." },
+              "prebuilt": { "type": ["boolean", "null"] },
+              "band": { "enum": ["UHF", "VHF", null] },
+              "bandwidth": { "$ref": "#/$defs/setting" },
+              "imd_3": { "$ref": "#/$defs/setting" },
+              "imd_3_tx_3rd": { "$ref": "#/$defs/setting" },
+              "imd_5": { "$ref": "#/$defs/setting" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "setting": {
+      "type": "object",
+      "description": "A coordination setting that is either a spacing in MHz or one of the source's tokens. Both forms are kept: `mhz` is null unless the source gave a number, and `mode` always says which it was.",
+      "additionalProperties": false,
+      "required": ["mode", "mhz", "raw"],
+      "properties": {
+        "mode": { "enum": ["default", "disabled", "value"] },
+        "mhz": { "type": ["number", "null"] },
+        "raw": { "type": "string" }
+      }
+    }
+  }
+}

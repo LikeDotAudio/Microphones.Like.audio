@@ -19,6 +19,7 @@ import re
 import sys
 from collections import Counter, defaultdict
 
+import build_rf as rf
 import vocabulary as V
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -74,7 +75,7 @@ def model_row(mic):
     }
 
 
-def build_config(mics, warn):
+def build_config(mics, rf_records, warn):
     """The UI vocabulary, counted against the corpus it will be filtering.
 
     Counting here is what keeps the page honest: a facet the data can't satisfy
@@ -82,6 +83,8 @@ def build_config(mics, warn):
     corpus that no button claims is reported rather than silently unreachable.
     """
     types = Counter(m["classification"].get("transducer_type") or "unknown" for m in mics)
+    if rf_records:
+        types["wireless"] = len(rf_records)
     forms = Counter(m["classification"].get("form_factor") for m in mics if m["classification"].get("form_factor"))
     avail = Counter(m["pricing"].get("availability") for m in mics)
     traits = Counter()
@@ -129,9 +132,10 @@ def build_config(mics, warn):
         bands.append(entry)
 
     type_entries = []
+    total = len(mics) + len(rf_records)
     for t in V.TYPES:
         entry = dict(t)
-        entry["count"] = len(mics) if t["key"] == "all" else types.get(t["key"], 0)
+        entry["count"] = total if t["key"] == "all" else types.get(t["key"], 0)
         if not entry["count"]:
             warn("transducer type %r has no microphones" % t["key"])
         type_entries.append(entry)
@@ -154,9 +158,47 @@ def build_config(mics, warn):
         if path and not any(dig(m, path) not in (None, [], "") for m in mics):
             warn("CSV column %r (%s) is empty for every microphone" % (col["label"], path))
 
+    # ---- wireless facets, counted off the RF records ----
+    band_counts = Counter()
+    for rec in rf_records:
+        for band in rec["classification"]["bands"]:
+            band_counts[band] += 1
+    bands = [{"key": "all", "label": "Any band", "count": len(rf_records)}] + [
+        {"key": b["key"], "label": b["label"], "count": band_counts.get(b["key"], 0)}
+        for b in V.RF_BANDS
+    ]
+    for key in band_counts:
+        if key not in {b["key"] for b in V.RF_BANDS}:
+            warn("RF band %r has no entry in vocabulary.RF_BANDS" % key)
+
+    rf_spectrum = []
+    for seg in V.RF_SPECTRUM:
+        entry = dict(seg)
+        hi = seg.get("max")
+        entry["count"] = sum(
+            1 for r in rf_records
+            if r["rf"]["coverage"]["start_mhz"] is not None
+            and r["rf"]["coverage"]["end_mhz"] is not None
+            # a system counts if any part of its coverage overlaps the segment
+            and r["rf"]["coverage"]["end_mhz"] >= seg["min"]
+            and (hi is None or r["rf"]["coverage"]["start_mhz"] < hi)
+        )
+        rf_spectrum.append(entry)
+
     return {
         "types": type_entries,
         "forms": form_entries,
+        "kinds": [dict(k, count=(len(mics) if k["key"] == "mic" else
+                                 len(rf_records) if k["key"] == "rf" else total))
+                  for k in V.KINDS],
+        "rfBands": bands,
+        "rfSpectrum": rf_spectrum,
+        "rfSorts": V.RF_SORTS,
+        "rfRangeColumns": V.RF_RANGE_COLUMNS,
+        "micChain": V.MIC_CHAIN,
+        "rfChain": V.RF_CHAIN,
+        "chainFeeds": V.CHAIN_FEEDS,
+        "chainFlows": V.CHAIN_FLOWS,
         "traits": [dict(t, count=traits.get(t["key"], 0)) for t in V.TRAITS],
         "priceBands": bands,
         "availability": [dict(a, count=len(mics) if a["key"] == "all" else avail.get(a["key"], 0))
@@ -194,44 +236,61 @@ def main():
     with open(SRC, encoding="utf-8") as fh:
         mics = json.load(fh)
 
+    warnings = []
+    rf_records = rf.load(warnings.append)
+    rf_by_brand = rf.by_brand(rf_records)
+
     by_brand = defaultdict(list)
     for mic in mics:
         by_brand[mic["source"]["brand_slug"]].append(mic)
 
     os.makedirs(os.path.join(OUT, "brands"), exist_ok=True)
 
+    # A vendor who only makes wireless still earns a place in the tree.
+    all_slugs = set(by_brand) | set(rf_by_brand)
+
     brands = []
-    for slug, group in by_brand.items():
+    for slug in all_slugs:
+        group = by_brand.get(slug, [])
+        rf_group = rf_by_brand.get(slug, [])
         group.sort(key=lambda m: (m["identity"].get("model") or "").lower())
         file_slug = safe_slug(slug)
 
+        # One file per brand carries both kinds, keyed by model slug — RF slugs
+        # are 'rf-' prefixed, so the two can never overwrite each other.
+        detail = {m["source"]["model_slug"]: m for m in group}
+        detail.update({r["source"]["model_slug"]: r for r in rf_group})
         with open(os.path.join(OUT, "brands", file_slug + ".json"), "w", encoding="utf-8") as fh:
-            json.dump(
-                {m["source"]["model_slug"]: m for m in group},
-                fh,
-                ensure_ascii=False,
-                separators=(",", ":"),
-            )
+            json.dump(detail, fh, ensure_ascii=False, separators=(",", ":"))
 
         types = defaultdict(int)
         for mic in group:
             types[mic["classification"].get("transducer_type") or "unknown"] += 1
+        if rf_group:
+            types["wireless"] = len(rf_group)
 
+        name = (group[0]["identity"].get("manufacturer") if group
+                else rf_group[0]["identity"]["manufacturer"])
         brands.append({
             "slug": slug,
             "file": file_slug,
-            "name": group[0]["identity"].get("manufacturer") or slug,
-            "url": group[0]["identity"].get("manufacturer_url"),
-            "count": len(group),
+            "name": name or slug,
+            "url": group[0]["identity"].get("manufacturer_url") if group else None,
+            "count": len(group) + len(rf_group),
+            "mics": len(group),
+            "rf": len(rf_group),
             "types": dict(types),
-            "models": [model_row(m) for m in group],
+            "models": [model_row(m) for m in group] + [rf.model_row(r) for r in rf_group],
         })
 
     brands.sort(key=lambda b: b["name"].lower())
 
     index = {
         "source": "Research/microphones.json",
-        "total_models": len(mics),
+        "rf_source": os.path.basename(rf.SRC) if rf_records else None,
+        "total_models": len(mics) + len(rf_records),
+        "total_microphones": len(mics),
+        "total_rf": len(rf_records),
         "total_brands": len(brands),
         "brands": brands,
     }
@@ -257,16 +316,28 @@ def main():
         json.dump({"total_tags": len(tags), "tags": tags}, fh,
                   ensure_ascii=False, separators=(",", ":"))
 
-    warnings = []
-    config = build_config(mics, warnings.append)
+    # The Wireless tab lists every RF system at once, so it gets one file rather
+    # than reaching into 16 brand files. Small enough to fetch on demand.
+    rf_path = os.path.join(OUT, "rf.json")
+    with open(rf_path, "w", encoding="utf-8") as fh:
+        json.dump({
+            "source": os.path.basename(rf.SRC),
+            "total_systems": len(rf_records),
+            "total_ranges": sum(r["rf"]["range_count"] for r in rf_records),
+            "systems": rf_records,
+        }, fh, ensure_ascii=False, separators=(",", ":"))
+
+    config = build_config(mics, rf_records, warnings.append)
     config_path = os.path.join(OUT, "config.json")
     with open(config_path, "w", encoding="utf-8") as fh:
         json.dump(config, fh, ensure_ascii=False, separators=(",", ":"))
 
-    print("%d brands / %d models" % (len(brands), len(mics)))
+    print("%d brands / %d microphones + %d RF systems" % (len(brands), len(mics), len(rf_records)))
     print("config.json %.0f KB" % (os.path.getsize(config_path) / 1024))
     print("index.json  %.0f KB" % (os.path.getsize(index_path) / 1024))
     print("tags.json   %.0f KB / %d tags" % (os.path.getsize(tags_path) / 1024, len(tags)))
+    print("rf.json     %.0f KB / %d ranges" %
+          (os.path.getsize(rf_path) / 1024, sum(r["rf"]["range_count"] for r in rf_records)))
     print("brands/     %d files" % len(brands))
     for w in warnings:
         print("  warning: %s" % w)

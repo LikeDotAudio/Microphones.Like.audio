@@ -42,6 +42,23 @@ export function ensureTags() {
   return tagsPromise;
 }
 
+/* rf.json holds every wireless system in full. The Wireless tab wants them all
+   at once, so it fetches this rather than reaching into 16 brand files. */
+let rfPromise = null;
+
+export function ensureRf() {
+  if (!rfPromise) {
+    rfPromise = fetch("data/rf.json")
+      .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then((data) => {
+        state.rf = data.systems;
+        return data;
+      })
+      .catch((err) => { rfPromise = null; throw err; });
+  }
+  return rfPromise;
+}
+
 /* Every model row in the corpus, flattened and tagged with its brand. Built
    once — the index never changes after boot. */
 let flatCache = null;

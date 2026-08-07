@@ -13,6 +13,12 @@ export const state = {
   tagMembers: new Map(),   // tag -> Set("<brand>/<model>")
   tagQuery: "",
   tagSort: "count",
+  rf: null,                // [rf records] once rf.json has loaded
+  rfQuery: "",
+  rfBand: "all",
+  rfSpectrum: "all",
+  rfSort: "brand",
+  kind: "all",             // catalogue entries to list: all / mic / rf
   brand: null,             // brand of the selected mic
   model: null,
   type: "all",

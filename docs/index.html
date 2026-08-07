@@ -20,6 +20,7 @@
   <div class="brandmark">Microphone Browser</div>
   <nav class="nav">
     <a class="navlink" id="navBrowse" href="#/">Browse</a>
+    <a class="navlink" id="navWireless" href="#/wireless">Wireless</a>
     <a class="navlink" id="navTags" href="#/tags">Tags</a>
     <a class="navlink" id="navStats" href="#/stats">Statistics</a>
   </nav>
@@ -61,6 +62,17 @@
       <span class="stat" id="tagStat"></span>
     </div>
     <div class="taggrid" id="tagGrid"></div>
+  </div>
+</section>
+
+<section id="wireless" class="statsview" hidden>
+  <div class="statswrap">
+    <h2 class="vh">Wireless systems</h2>
+    <!-- Filters are filled by js/rfview.js from data/config.json. -->
+    <div class="tagbar" id="rfFilters"></div>
+    <div class="stat" id="rfStat"></div>
+    <div class="rfaxis" id="rfAxis"></div>
+    <div class="rflist" id="rfGrid"></div>
   </div>
 </section>
 

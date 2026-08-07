@@ -23,7 +23,17 @@ TYPES = [
     {"key": "ribbon", "label": "Ribbon"},
     {"key": "boundary", "label": "Boundary"},
     {"key": "hybrid", "label": "Hybrid"},
+    {"key": "wireless", "label": "Wireless"},
     {"key": "unknown", "label": "Unclassified"},
+]
+
+# What a catalogue entry is. Microphones and RF systems keep separate record
+# schemas but share the brand tree and the model list, so every index row says
+# which of the two it is.
+KINDS = [
+    {"key": "all", "label": "Everything"},
+    {"key": "mic", "label": "Microphones"},
+    {"key": "rf", "label": "Wireless systems"},
 ]
 
 FORM_LABELS = {
@@ -112,6 +122,102 @@ PATTERN_DISPLAY = {
     "continuously variable pattern selection": "continuously variable",
 }
 
+# ------------------------------------------------------------- wireless
+
+# VHF/UHF, as the RF source marks them.
+RF_BANDS = [
+    {"key": "UHF", "label": "UHF"},
+    {"key": "VHF", "label": "VHF"},
+]
+
+# Spectrum segments for the Wireless tab. A system matches a segment if any part
+# of its coverage overlaps it, so a wideband tuner appears under each one it
+# reaches rather than only where it starts.
+RF_SPECTRUM = [
+    {"key": "all", "label": "Any spectrum", "min": 0},
+    {"key": "vhf", "label": "VHF · under 300 MHz", "min": 0, "max": 300},
+    {"key": "low-uhf", "label": "Low UHF · 300–500 MHz", "min": 300, "max": 500},
+    {"key": "tv-core", "label": "TV core · 500–600 MHz", "min": 500, "max": 600},
+    {"key": "600", "label": "600 MHz · 600–700 MHz", "min": 600, "max": 700},
+    {"key": "700", "label": "700 MHz · 700–800 MHz", "min": 700, "max": 800},
+    {"key": "900", "label": "Above 800 MHz", "min": 800},
+]
+
+RF_SORTS = [
+    {"key": "brand", "label": "Brand"},
+    {"key": "model", "label": "Model"},
+    {"key": "low", "label": "Lowest frequency"},
+    {"key": "span", "label": "Widest coverage"},
+    {"key": "ranges", "label": "Most ranges"},
+]
+
+# Columns of the per-range table in a wireless system's detail pane. `path` is a
+# dotted path into one entry of rf.ranges.
+RF_RANGE_COLUMNS = [
+    {"label": "Range", "path": "name"},
+    {"label": "Band", "path": "band"},
+    {"label": "Start", "path": "start_mhz", "unit": " MHz", "num": True},
+    {"label": "End", "path": "end_mhz", "unit": " MHz", "num": True},
+    {"label": "Width", "path": "width_mhz", "unit": " MHz", "num": True},
+    {"label": "Presets", "path": "presets", "num": True},
+    {"label": "Bandwidth", "path": "bandwidth", "kind": "setting"},
+    {"label": "IMD3", "path": "imd_3", "kind": "setting"},
+    {"label": "IMD3 TX 3rd", "path": "imd_3_tx_3rd", "kind": "setting"},
+    {"label": "IMD5", "path": "imd_5", "kind": "setting"},
+]
+
+# ---------------------------------------------------------- signal chain
+
+# Block diagrams, in the spirit of the AES X230 typical-block-diagram sheets.
+#
+# Each entry is one block in a left-to-right signal chain. `source` names an
+# extractor in js/chain.js that reads the record and returns the block's caption
+# lines plus the fields it read — those fields are what the detail table under
+# the drawing lists, so the drawing can always be traced back to data.
+#
+# `optional` blocks are omitted when their extractor finds nothing, which is
+# what makes the drawing specific to one microphone rather than a generic
+# diagram: a mic with no pad simply has no attenuator in its chain.
+#
+#   shape:  box | circle | triangle | antenna
+#   flow:   audio (default) | digital | rf | control | power
+MIC_CHAIN = [
+    {"key": "transducer", "label": "TRANSDUCER", "shape": "circle", "source": "transducer"},
+    {"key": "pad", "label": "ATTENUATOR", "source": "pads", "optional": True},
+    {"key": "filter", "label": "FILTER", "source": "filters", "optional": True},
+    {"key": "preamp", "label": "PREAMP", "shape": "triangle", "source": "preamp", "optional": True},
+    {"key": "output", "label": "OUTPUT", "source": "output", "optional": True},
+    {"key": "connector", "label": "CONNECTOR", "source": "connector", "terminal": True},
+]
+
+# The wireless chain, following the X230 "MICROPHONE" sheet: the analog front
+# end, then conversion, then the radio.
+RF_CHAIN = [
+    {"key": "transducer", "label": "TRANSDUCER", "shape": "circle", "source": "rfTransducer"},
+    {"key": "preamp", "label": "PREAMP", "shape": "triangle", "source": "rfPreamp"},
+    {"key": "adc", "label": "ADC", "source": "rfAdc", "flow": "digital"},
+    {"key": "transmitter", "label": "TRANSMITTER", "source": "rfTransmitter", "flow": "digital"},
+    {"key": "antenna", "label": "ANTENNA", "shape": "antenna", "source": "rfAntenna", "flow": "rf"},
+    {"key": "out", "label": "RF (out)", "source": "rfOut", "terminal": True, "flow": "rf"},
+]
+
+# Feeds drawn entering the chain from below rather than in line with it.
+CHAIN_FEEDS = [
+    {"key": "power", "label": "POWER", "source": "power", "into": "preamp",
+     "flow": "power", "optional": True},
+    {"key": "control", "label": "CONTROL", "source": "rfControl", "into": "transmitter",
+     "flow": "control", "optional": True},
+]
+
+# Legend for the flow colours, so the drawing explains its own wiring.
+CHAIN_FLOWS = [
+    {"key": "audio", "label": "Analog audio", "css": "var(--s3)"},
+    {"key": "digital", "label": "Digital audio", "css": "var(--s1)"},
+    {"key": "rf", "label": "RF", "css": "var(--s2)"},
+    {"key": "power", "label": "Power", "css": "var(--s4)"},
+    {"key": "control", "label": "Control", "css": "var(--s5)"},
+]
+
 # --------------------------------------------------------------- charts
 
 # Stacked-bar series, in stacking order. Boundary/hybrid/unknown are ~7% between
@@ -134,6 +240,7 @@ TYPE_COLORS = {
     "ribbon": "var(--s3)",
     "boundary": "var(--s4)",
     "hybrid": "var(--s5)",
+    "wireless": "var(--s6)",
     "unknown": "var(--faint)",
 }
 

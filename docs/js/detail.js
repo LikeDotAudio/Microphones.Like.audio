@@ -1,6 +1,9 @@
 /* The right-hand pane: one microphone, rendered in full. */
 
 import { $, cap, el, has, num, money } from "./dom.js";
+import { buildChain } from "./chain.js";
+import { cfg } from "./config.js";
+import { drawDetails, drawDiagram, drawLegend } from "./diagram.js";
 import { loadBrand } from "./data.js";
 import { go, parsePermalink } from "./hash.js";
 import { appLink, extLink, sanitize } from "./links.js";
@@ -33,9 +36,88 @@ export async function renderDetail() {
   }
   if (state.model !== mic.source.model_slug) return; // superseded by a newer click
   host.innerHTML = "";
-  host.appendChild(buildDetail(mic));
+  const isRf = mic.classification.kind === "rf";
+  host.appendChild(isRf ? buildRfDetail(mic) : buildDetail(mic));
   host.scrollTop = 0;
-  $("detailSub").textContent = mic.source.mic_id ? "id " + mic.source.mic_id : "";
+  $("detailSub").textContent = isRf
+    ? mic.rf.range_count + " tuning range" + (mic.rf.range_count === 1 ? "" : "s")
+    : (mic.source.mic_id ? "id " + mic.source.mic_id : "");
+}
+
+/* The drawing, its legend, and the fields every box came from. */
+function diagramSection(rec) {
+  const chain = buildChain(rec);
+  if (!chain.blocks.length) return null;
+  const wrap = el("div", "dgblock");
+  wrap.append(drawDiagram(chain), drawLegend(chain));
+  wrap.appendChild(el("div", "note",
+    "Drawn from this record — a block only appears when the data calls for it."));
+  wrap.appendChild(drawDetails(chain));
+  return section("Signal chain", wrap);
+}
+
+/* Wireless systems carry none of the microphone spec fields, so they get their
+   own layout rather than a mic page with most of it missing. */
+function buildRfDetail(rec) {
+  const root = el("div", "detail");
+  const id = rec.identity, cls = rec.classification, cov = rec.rf.coverage;
+
+  root.appendChild(el("h1", null, id.full_name));
+  root.appendChild(el("div", "sub", cls.subtitle));
+
+  const badges = el("div", "badges");
+  badges.appendChild(el("span", "tag type t-wireless", "Wireless"));
+  cls.bands.forEach((b) => badges.appendChild(el("span", "tag", b)));
+  badges.appendChild(el("span", "tag", rec.rf.range_count + " ranges"));
+  root.appendChild(badges);
+
+  const facts = dl([
+    ["Manufacturer", id.manufacturer],
+    ["Model", id.model],
+    ["Coverage", cov.start_mhz != null
+      ? num(cov.start_mhz, " MHz") + " – " + num(cov.end_mhz, " MHz") : null],
+    ["Envelope", num(cov.span_mhz, " MHz")],
+    ["Tunable", num(cov.tunable_mhz, " MHz")],
+    ["Presets", rec.rf.presets.max != null
+      ? (rec.rf.presets.min === rec.rf.presets.max
+        ? String(rec.rf.presets.max)
+        : rec.rf.presets.min + " – " + rec.rf.presets.max) : null],
+    ["Source", rec.source.dataset],
+  ]);
+  if (facts) root.appendChild(section("System", facts));
+
+  const diag = diagramSection(rec);
+  if (diag) root.appendChild(diag);
+
+  /* ---- the per-range table, columns from config ---- */
+  const cols = cfg().rfRangeColumns;
+  const table = el("table", "data");
+  const htr = el("tr");
+  cols.forEach((c) => htr.appendChild(el("th", null, c.label)));
+  table.appendChild(htr);
+  for (const r of rec.rf.ranges) {
+    const tr = el("tr");
+    for (const c of cols) {
+      const v = r[c.path];
+      if (c.kind === "setting") {
+        const td = el("td");
+        if (!v) td.textContent = "—";
+        else if (v.mode === "value") td.textContent = num(v.mhz, " MHz");
+        else { td.textContent = v.raw; td.className = "dim"; }
+        tr.appendChild(td);
+      } else if (c.num) {
+        tr.appendChild(el("td", "num", v == null ? "—" : num(v) + (c.unit || "")));
+      } else {
+        tr.appendChild(el("td", null, v == null || v === "" ? "—" : String(v)));
+      }
+    }
+    table.appendChild(tr);
+  }
+  const wrap = el("div", "tablewrap");
+  wrap.appendChild(table);
+  root.appendChild(section("Tuning ranges", wrap));
+
+  return root;
 }
 
 function section(title, body) {
@@ -127,6 +209,10 @@ function buildDetail(mic) {
   if (head) { head.style.marginTop = "10px"; facts.appendChild(head); }
   hero.appendChild(facts);
   root.appendChild(hero);
+
+  /* --- signal chain --- */
+  const diagram = diagramSection(mic);
+  if (diagram) root.appendChild(diagram);
 
   /* --- description --- */
   if (content.description_html) {
