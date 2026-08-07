@@ -1,0 +1,387 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://microphones.like.audio/schemas/aes_x230_profile.json",
+  "title": "AES-X230 microphone profile definition",
+  "description": "The AES X230 data model, expressed as a schema. X230 is a draft AES recommendation that describes a microphone as a set of AES70 (OCA) control objects: it takes each AES42 microphone parameter and binds it to an AES70 class, a reusable block, a role name inside that block, and the property carrying the value. That four-part binding is the whole model, and it is what `parameters[]` below encodes. Instance: Research/aes_x230_profile.json, transcribed row by row from the X230 object-list workbook (X230-Mic-Profile-ObjectList-180502) and the companion block diagrams. Deliberately separate from Research/aes_x230_device.schema.json: this file is the profile, that one is one device read against it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profile", "source", "blocks", "parameters"],
+
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "profile": {
+      "type": "object",
+      "description": "Identity of the profile document itself.",
+      "additionalProperties": false,
+      "required": ["id", "title", "status"],
+      "properties": {
+        "id": { "type": "string", "description": "AES project identifier, e.g. 'AES-X230'." },
+        "title": { "type": "string" },
+        "revision": { "type": ["string", "null"] },
+        "date": { "type": ["string", "null"], "description": "ISO date the workbook carries." },
+        "status": { "type": "string", "description": "The workbook's own marking, e.g. 'DRAFT'." },
+        "editor": { "type": ["string", "null"] },
+        "parameter_source": {
+          "type": "string",
+          "description": "The standard the parameter list is carried over from — AES42."
+        },
+        "control_protocol": {
+          "type": "string",
+          "description": "The control architecture the parameters are bound to — AES70 (OCA)."
+        },
+        "purpose": { "type": "string", "description": "What the profile is for, in one paragraph." }
+      }
+    },
+
+    "source": {
+      "type": "object",
+      "description": "Where this transcription came from, so any row can be checked.",
+      "additionalProperties": false,
+      "required": ["workbook"],
+      "properties": {
+        "workbook": { "type": "string" },
+        "diagram_document": { "type": ["string", "null"] },
+        "sheets": { "type": "array", "items": { "type": "string" } },
+        "primary_sheet": { "type": ["string", "null"] },
+        "transcribed": { "type": ["string", "null"] }
+      }
+    },
+
+    "narrative": {
+      "type": "array",
+      "description": "Prose explaining the model: what it is, the logic of the binding, the blocks, the radio half, the object-list convention, and the state of the draft. Held here rather than in the application so the page ships no text of its own.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "heading", "body"],
+        "properties": {
+          "key": { "type": "string" },
+          "heading": { "type": "string" },
+          "body": {
+            "type": "array",
+            "description": "Paragraphs. **bold** spans are the only markup.",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "type_codes": {
+      "type": "array",
+      "description": "The object-list row types defined on the workbook's Help sheet. An entry's type says whether it is an object, a property, a read-only property, a method, an event, or an element the device declares unimplemented.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "label"],
+        "properties": {
+          "code": { "type": "string", "enum": ["O", "P", "R", "M", "E", "N"] },
+          "label": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+
+    "applicability_codes": {
+      "type": "array",
+      "description": "The y / m / blank vocabulary the RF half of the sheet uses to mark a parameter against each class of radio device.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "label"],
+        "properties": {
+          "code": { "type": ["string", "null"], "enum": ["y", "m", null] },
+          "label": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+
+    "blocks": {
+      "type": "array",
+      "description": "The AES70 reusable blocks the profile places objects in. The workbook's own Blocks sheet was never filled in (headers only), so these are derived from the Block column of the Classes sheet and from the block diagrams — `source_label` is the literal cell text.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "name", "domain"],
+        "properties": {
+          "key": { "type": "string", "description": "Stable id used by parameters[].block and by applicability keys." },
+          "name": { "type": "string" },
+          "domain": {
+            "type": "string",
+            "enum": ["audio", "rf", "device"],
+            "description": "'device' marks the objects that hang off OcaDeviceManager rather than sitting in a block."
+          },
+          "purpose": { "type": "string" },
+          "source_label": { "type": ["string", "null"], "description": "The Block cell as written, including 'n/a'." },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+
+    "diagrams": {
+      "type": "array",
+      "description": "The three typical block diagrams published alongside the object list. They are what fixes the meaning of the blocks: a smart mic carrying the whole chain, a wireless mic cut back to the radio, and a base station running the chain in reverse. Each red control point in the drawing is a place the profile expects an AES70 object.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "title", "summary"],
+        "properties": {
+          "key": { "type": "string" },
+          "title": { "type": "string" },
+          "summary": { "type": "string", "description": "What the drawing shows and why it differs from the others." },
+          "chain": {
+            "type": "array",
+            "description": "The in-line signal path, left to right.",
+            "items": { "$ref": "#/$defs/diagramNode" }
+          },
+          "boundary": {
+            "type": "object",
+            "description": "Where the drawing marks the analog/digital divide.",
+            "additionalProperties": false,
+            "properties": {
+              "after": { "type": "string", "description": "The chain node the divide falls after." },
+              "left": { "type": "string" },
+              "right": { "type": "string" }
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "description": "The output options the chain fans out to. On the smart mic and base station these are alternatives, not a fixed set.",
+            "items": { "$ref": "#/$defs/diagramPort" }
+          },
+          "inputs": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/diagramPort" }
+          },
+          "control": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "protocol": { "type": "string" },
+              "transport": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "enumerations": {
+      "type": "object",
+      "description": "Value sets a parameter's class draws on, keyed by the name parameters[].enumeration refers to.",
+      "additionalProperties": { "$ref": "#/$defs/enumeration" }
+    },
+
+    "parameters": {
+      "type": "array",
+      "description": "One entry per row of the Classes sheet — the profile itself. The audio section names a block per parameter; the RF section names an applicability grid instead.",
+      "items": { "$ref": "#/$defs/parameter" }
+    },
+
+    "open_issues": {
+      "type": "array",
+      "description": "Places the draft is unfinished or internally inconsistent, recorded rather than quietly repaired. A conformance report that treats these as failures would be reading the profile wrong.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "summary"],
+        "properties": {
+          "key": { "type": "string" },
+          "summary": { "type": "string" },
+          "source": { "type": ["string", "null"], "description": "Sheet and row/cell the issue lives at." }
+        }
+      }
+    },
+
+    "crosswalk": {
+      "type": "object",
+      "description": "NOT PART OF AES-X230. This repository's own mapping from catalogue vocabulary onto the profile, plus the status and access vocabularies a device report uses. Kept in this file so the entire interpretation is one reviewable artifact, and fenced off under its own key so nothing here can be mistaken for the standard.",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "description": { "type": "string" },
+        "pattern_positions": {
+          "type": "array",
+          "description": "Catalogue pattern name to profile PatternType position. `gradient` is the first-order coefficient the profile publishes for that pattern, and is null where the profile gives none.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["corpus", "position"],
+            "properties": {
+              "corpus": { "type": "string" },
+              "position": { "type": ["integer", "null"] },
+              "position_name": { "type": ["string", "null"] },
+              "gradient": { "type": ["number", "null"] },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        "digital_connectors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "description": { "type": "string" },
+            "match": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "statuses": {
+          "type": "array",
+          "description": "The vocabulary a device report uses per parameter. Mirrors aes_x230_device.schema.json.",
+          "items": { "$ref": "#/$defs/term" }
+        },
+        "access": {
+          "type": "array",
+          "description": "Whether a mapped value is an actual AES70 control point or only a fact about the hardware.",
+          "items": { "$ref": "#/$defs/term" }
+        }
+      }
+    }
+  },
+
+  "$defs": {
+    "term": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label"],
+      "properties": {
+        "key": { "type": "string" },
+        "label": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+
+    "diagramNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string" },
+        "parts": {
+          "type": "array",
+          "description": "Sub-boxes drawn inside the block, e.g. the ADC's converter and clock.",
+          "items": { "type": "string" }
+        },
+        "shape": { "type": "string", "enum": ["box", "circle", "triangle", "antenna"] },
+        "control_point": {
+          "type": "boolean",
+          "description": "True where the drawing puts a red dot — a place the profile expects a controllable object."
+        }
+      }
+    },
+
+    "diagramPort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label"],
+      "properties": {
+        "label": { "type": "string" },
+        "via": { "type": "array", "items": { "type": "string" }, "description": "Blocks the signal passes through to reach the port." },
+        "flow": { "type": "string", "enum": ["audio", "digital", "rf", "control", "power"] },
+        "control_point": { "type": "boolean" }
+      }
+    },
+
+    "enumeration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description", "positions"],
+      "properties": {
+        "description": { "type": "string" },
+        "source_cells": { "type": ["string", "null"] },
+        "notes": { "type": "array", "items": { "type": "string" } },
+        "positions": {
+          "type": "array",
+          "description": "Switch positions as published. Position numbers are not guaranteed contiguous — the pattern list skips 9.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["position", "name"],
+            "properties": {
+              "position": { "type": "integer" },
+              "name": { "type": "string", "description": "The position name, which the profile says is what a controller displays." },
+              "gradient": {
+                "type": ["number", "null"],
+                "description": "First-order gradient coefficient where the profile publishes one — 0 omni, 0.5 cardioid, 1 figure-8. Null elsewhere, including for patterns that plainly have one."
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "parameter": {
+      "type": "object",
+      "description": "One profile parameter: an AES42 name carried across to an AES70 binding.",
+      "additionalProperties": false,
+      "required": ["key", "section", "source_row", "profile_name", "oca"],
+      "properties": {
+        "key": { "type": "string", "description": "Stable id for this parameter, used by device reports." },
+        "section": {
+          "type": "string",
+          "enum": ["audio", "rf"],
+          "description": "Which half of the Classes sheet the row is in. The two halves are structured differently and were compiled separately."
+        },
+        "source_row": { "type": "integer", "description": "Row number on the Classes sheet." },
+        "aes42_name": {
+          "type": ["string", "null"],
+          "description": "The parameter as AES42 names it. Null where the profile adds a parameter AES42 does not have."
+        },
+        "profile_name": { "type": "string", "description": "The name the profile gives it — often a plainer rewording, e.g. Preattenuation becomes Pad." },
+        "remarks": { "type": ["string", "null"], "description": "The editor's remarks column, verbatim." },
+        "range": { "type": ["string", "null"], "description": "Value range as written; prose, not a machine range." },
+        "unit": { "type": ["string", "null"] },
+        "group": { "type": ["string", "null"], "description": "A sub-heading the row sits under, e.g. 'Other parameters from text of document'." },
+        "block": {
+          "type": ["string", "null"],
+          "description": "blocks[].key the object sits in. Audio section only; null where the draft assigns none."
+        },
+        "applicability": {
+          "type": "object",
+          "description": "RF section only: which classes of radio device the parameter applies to. Keys are blocks[].key; a block absent from the map does not carry the parameter.",
+          "additionalProperties": { "type": "string", "enum": ["y", "m"] }
+        },
+        "cardinality": {
+          "type": "string",
+          "enum": ["single", "per-section"],
+          "description": "'per-section' marks the roles written with an (n) — one object per filter or EQ section rather than one per device."
+        },
+        "enumeration": { "type": ["string", "null"], "description": "Key into enumerations." },
+        "oca": {
+          "type": "object",
+          "description": "The AES70 binding: class, role, property. This is the part a controller resolves against.",
+          "additionalProperties": false,
+          "required": ["class", "class_raw", "resolved", "property"],
+          "properties": {
+            "class": {
+              "type": ["string", "null"],
+              "description": "AES70 class name, normalised. Null where the draft left it open."
+            },
+            "class_raw": {
+              "type": "string",
+              "description": "The Class cell exactly as written, including the placeholders '?', '???' and 'tbd' and the line breaks inside two class names."
+            },
+            "resolved": {
+              "type": "boolean",
+              "description": "False where class_raw is a placeholder — the parameter is named in the profile but not yet bound."
+            },
+            "role_name": {
+              "type": ["string", "null"],
+              "description": "The role the object carries inside its block, and what a controller searches for. Null for device-manager properties, which have no role."
+            },
+            "property": {
+              "type": "array",
+              "description": "The property or properties carrying the value. Empty where the draft says 'tbd'. Two entries are written as method calls rather than properties.",
+              "items": { "type": "string" }
+            },
+            "remarks": { "type": ["string", "null"], "description": "The OCA-side remarks column, verbatim — often the semantics of the positions." }
+          }
+        },
+        "notes": {
+          "type": "string",
+          "description": "Transcription note: what was normalised, and what the workbook literally said."
+        }
+      }
+    }
+  }
+}

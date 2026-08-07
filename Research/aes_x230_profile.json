@@ -1,0 +1,1024 @@
+{
+  "$schema": "./aes_x230_profile.schema.json",
+
+  "profile": {
+    "id": "AES-X230",
+    "title": "AES Recommended AES70 Microphone Profile",
+    "revision": "rev 01",
+    "date": "2018-05-02",
+    "status": "DRAFT",
+    "editor": "Jeff B",
+    "parameter_source": "AES42",
+    "control_protocol": "AES70 (OCA)",
+    "purpose": "Define one agreed set of AES70 control objects for microphones, so that a controller which knows the profile can operate any compliant microphone without vendor-specific knowledge. AES42 already standardises what a remotely-controlled microphone can do; AES70 standardises how any audio device is controlled. X230 is the bridge: it takes each AES42 parameter and binds it to a specific AES70 class, sitting at a specific role inside a specific reusable block, carrying its value in a specific property."
+  },
+
+  "source": {
+    "workbook": "X230-Mic-Profile-ObjectList-180502 (2).xlsm.xlsx",
+    "diagram_document": "X230-Mic-Profile-TypicalBlockDiagrams-180502.pdf",
+    "sheets": ["Blocks", "Classes", "Help"],
+    "primary_sheet": "Classes",
+    "transcribed": "Every parameter below is a row of the Classes sheet. `source_row` is that row number, so any entry can be checked against the workbook."
+  },
+
+  "narrative": [
+    {
+      "key": "what",
+      "heading": "What the profile is",
+      "body": [
+        "X230 is a draft AES recommendation that describes a microphone as a set of AES70 (OCA) control objects. It is not a wire format and not a specification sheet — it is a control model. It answers one question: when a controller connects to a microphone and wants to change the pad, where does it look?",
+        "The workbook that carries the model is a two-column translation. The left half is AES42 — the existing standard for digitally-controlled microphones, whose parameters are named in the language of microphone engineering: preattenuation, polar pattern, low-cut, polarity inversion. The right half is AES70 — the control architecture, whose language is classes, blocks, roles and properties. Each row is one parameter carried across."
+      ]
+    },
+    {
+      "key": "logic",
+      "heading": "The logic: a four-part binding",
+      "body": [
+        "Every parameter in the profile is pinned down by four things, and it is the combination that makes it findable rather than any one of them.",
+        "The **class** says what kind of control it is — OcaSwitch for a discrete selector, OcaGain for a continuous level, OcaMute for on/off, OcaFilterClassical for a fixed-shape filter. The class also decides the semantics: an OcaSwitch has numbered positions with names, so a pad becomes positions whose names are gain values.",
+        "The **block** says where in the device it lives. AES70 blocks are reusable groupings; X230 names four for the audio path — Preamp, Processor, Utility, ADC — and six for radio gear. Device identity is not in a block at all: it hangs off the device manager.",
+        "The **role name** is the label the object carries inside its block, and it is what a controller actually searches for: role 'Pad' in block 'Preamp'.",
+        "The **property** is the field on that class holding the value. OcaSwitch carries it in Position, OcaGain in Value, OcaMediaClock in RatesSupported and CurrentRate.",
+        "So 'the pad' resolves to: OcaSwitch, in the Preamp block, at role Pad, read and written through Position — and the profile adds that the position *names* are the gain values, which is what lets a controller show '-10 dB' instead of 'position 2'."
+      ]
+    },
+    {
+      "key": "blocks",
+      "heading": "Blocks and the signal chain",
+      "body": [
+        "The blocks follow the signal, not the enclosure. Preamp holds everything that happens to the analog signal before conversion — pad, pattern selection, low-cut, gain, polarity, mute, and the rated sensitivity. Processor holds the DSP that follows conversion — compressor, EQ, limiter, delay. ADC holds conversion itself: sample rate, word length, and the latency the conversion costs. Utility holds what is not in the signal path at all — the identify light and the test-signal generator.",
+        "This is why the block matters as much as the class. OcaGain appears twice in the profile: once at role Gain in Preamp, and once at role BoosterGain in the radio blocks. Same class, different meaning, told apart only by where it sits."
+      ]
+    },
+    {
+      "key": "rf",
+      "heading": "The radio half",
+      "body": [
+        "The second half of the Classes sheet is a separate collection, gathered for wireless equipment. It is structured differently: instead of naming one block per parameter, it marks each parameter against six device roles — Transmitter, Receiver, Analyzer, Manager, transmit antenna and receive antenna — with 'y' where the parameter applies and 'm' where it may.",
+        "That grid is the interesting part. Frequency select applies to all four active devices and may apply to the antennas; RF mute and RF output power apply only where there is a transmitter; SWR applies where there is something to measure standing waves against. Reading down a column gives the object list for one class of radio device."
+      ]
+    },
+    {
+      "key": "objectlist",
+      "heading": "How an object list is written",
+      "body": [
+        "The workbook's Help sheet defines the convention for listing a real device's objects: one header row per object, then one row for each element of that object worth documenting — basic functional properties, read-only properties whose read-only status matters, elements that are unimplemented or partially implemented, and elements with semantics an ordinary controller would not expect.",
+        "Each row is typed. O marks an object; P a property; R a read-only property; M a method; E an event; and N an element that is *not implemented* — the code exists so that a device can positively declare an optional element missing, rather than leaving a controller to guess. Indent depth carries nesting: the root block one notch, objects inside it two, and so on. Items an ordinary application should not see are flagged ADV.",
+        "The N code is the reason this repository's device view distinguishes 'absent' from 'unknown'. The profile itself takes the position that a missing element is a fact to be recorded, not a gap."
+      ]
+    },
+    {
+      "key": "state",
+      "heading": "State of the draft",
+      "body": [
+        "The workbook is marked DRAFT, revision 01, dated 2018-05-02, and it shows. Four parameters have no class assigned: Stereo ('not in focus at the moment'), Type ('what is this, exactly?'), RF link test features and external filter band (both 'tbd'). The Blocks sheet — which was to carry each block's name, ID and purpose — contains only its column headers; no block was ever filled in, so block identity in this transcription is derived from the Block column of the Classes sheet and from the block diagrams.",
+        "There are two smaller slips worth knowing about, both preserved with notes: the Sensitivity row has its role name and property swapped relative to every other row, and the polar-pattern position table skips position 9, jumping from 8 (short shot gun) to 10 (long shot gun)."
+      ]
+    }
+  ],
+
+  "type_codes": [
+    { "code": "O", "label": "Object", "description": "An object — including a block. Occupies a header row in an object list." },
+    { "code": "P", "label": "Property", "description": "A settable property of the object above it." },
+    { "code": "R", "label": "Read-only property", "description": "A property whose read-only status is worth documenting." },
+    { "code": "M", "label": "Method", "description": "A method of the object." },
+    { "code": "E", "label": "Event", "description": "An event the object raises." },
+    { "code": "N", "label": "Not implemented", "description": "An optional element the device positively declares it does not implement." }
+  ],
+
+  "applicability_codes": [
+    { "code": "y", "label": "Applies", "description": "The parameter applies to this class of device." },
+    { "code": "m", "label": "May apply", "description": "The parameter may apply, at the manufacturer's option." },
+    { "code": null, "label": "Not applicable", "description": "Blank in the workbook: the parameter does not apply to this class of device." }
+  ],
+
+  "blocks": [
+    {
+      "key": "preamp",
+      "name": "Preamp",
+      "domain": "audio",
+      "purpose": "The analog front end: everything done to the signal before conversion, plus the microphone's rated sensitivity.",
+      "source_label": "Preamp"
+    },
+    {
+      "key": "processor",
+      "name": "Processor",
+      "domain": "audio",
+      "purpose": "Signal processing after conversion — dynamics, equalisation, delay.",
+      "source_label": "Processor"
+    },
+    {
+      "key": "adc",
+      "name": "ADC",
+      "domain": "audio",
+      "purpose": "Analog-to-digital conversion and its clock: sample rate, word length, and conversion latency.",
+      "source_label": "ADC"
+    },
+    {
+      "key": "utility",
+      "name": "Utility",
+      "domain": "audio",
+      "purpose": "Functions outside the signal path — the identify light and the test-signal generator.",
+      "source_label": "Utility"
+    },
+    {
+      "key": "device",
+      "name": "Device",
+      "domain": "device",
+      "purpose": "Device-level identity carried by OcaDeviceManager rather than by any block: manufacturer, serial number, user label.",
+      "source_label": "n/a",
+      "notes": "The workbook writes 'n/a' in the Block column for these rows, meaning they are not inside a reusable block."
+    },
+    { "key": "transmitter", "name": "Transmitter", "domain": "rf", "purpose": "A radio transmitter.", "source_label": "Transmitter" },
+    { "key": "receiver", "name": "Receiver", "domain": "rf", "purpose": "A radio receiver.", "source_label": "Receiver" },
+    { "key": "analyzer", "name": "Analyzer", "domain": "rf", "purpose": "A spectrum analyser or scanning receiver used for coordination.", "source_label": "Analyzer" },
+    { "key": "manager", "name": "Manager", "domain": "rf", "purpose": "A management device coordinating a set of radio links.", "source_label": "Manager" },
+    { "key": "xmit_antenna", "name": "Xmit Antenna", "domain": "rf", "purpose": "A transmit antenna, where it is itself controllable.", "source_label": "Xmit Antenna" },
+    { "key": "rcv_antenna", "name": "Rcv Antenna", "domain": "rf", "purpose": "A receive antenna, where it is itself controllable.", "source_label": "Rcv Antenna" }
+  ],
+
+  "diagrams": [
+    {
+      "key": "smart-mic",
+      "title": "Smart mic",
+      "summary": "The full model: one microphone containing the entire chain, from capsule to whichever output the manufacturer fits. Everything downstream of the ADC is digital, and the output stage is a choice rather than a fixed design — analog via DAC and line amp, AES3, network audio over IP as AES67, or a radio transmitter. Control arrives separately as AES70 over IP and fans out to a control point in every stage.",
+      "chain": [
+        { "label": "Transducer", "shape": "circle", "control_point": false },
+        { "label": "Preamp", "parts": ["Attenuator", "Variable-gain amplifier"], "control_point": true },
+        { "label": "ADC", "parts": ["ADC", "CLK"], "control_point": true },
+        { "label": "Filters", "control_point": true },
+        { "label": "Dynamics", "parts": ["Limiter", "Compressor"], "control_point": true }
+      ],
+      "boundary": { "after": "Preamp", "left": "Analog", "right": "Digital" },
+      "outputs": [
+        { "label": "Analog", "via": ["DAC", "Line amp"], "flow": "audio", "control_point": true },
+        { "label": "AES3", "via": ["AES3"], "flow": "digital", "control_point": false },
+        { "label": "AES67", "via": ["Network audio"], "flow": "digital", "control_point": true },
+        { "label": "RF (out)", "via": ["Transmitter", "Antenna"], "flow": "rf", "control_point": true }
+      ],
+      "inputs": [
+        { "label": "RF (in)", "via": ["Antenna", "Receiver"], "flow": "rf", "control_point": true }
+      ],
+      "control": { "label": "Network control", "protocol": "AES70", "transport": "IP" }
+    },
+    {
+      "key": "simple-wireless-mic",
+      "title": "Simple wireless mic",
+      "summary": "The same chain cut back to what a body-pack or handheld transmitter actually contains: transducer, attenuator, preamp, ADC with its clock, transmitter, antenna. There are no filters, no dynamics and no output choice — the radio link is the output. A receiver and its antenna are drawn alongside because the transmitter still has to be told what to do, and network control reaches the microphone through them.",
+      "chain": [
+        { "label": "Transducer", "shape": "circle", "control_point": false },
+        { "label": "Attenuator", "control_point": false },
+        { "label": "Preamp", "control_point": true },
+        { "label": "ADC", "parts": ["ADC", "Clock"], "control_point": true },
+        { "label": "Transmitter", "control_point": true }
+      ],
+      "outputs": [
+        { "label": "RF (out)", "via": ["Antenna"], "flow": "rf", "control_point": true }
+      ],
+      "inputs": [
+        { "label": "RF (in)", "via": ["Antenna", "Receiver"], "flow": "rf", "control_point": true }
+      ],
+      "control": { "label": "Network control", "protocol": "AES70", "transport": "IP" }
+    },
+    {
+      "key": "base-station",
+      "title": "Base station",
+      "summary": "The receiving half, and the mirror image of the smart mic: the chain starts at the antenna instead of the capsule. RF comes in to a receiver, then filters and dynamics, then the same set of output options — analog, AES3, network audio — plus clocking as its own controllable block. A transmitter sits alongside for the return link back to the microphone.",
+      "chain": [
+        { "label": "Receiver", "control_point": true },
+        { "label": "Filters", "control_point": true },
+        { "label": "Dynamics", "parts": ["Limiter", "Compressor"], "control_point": true }
+      ],
+      "outputs": [
+        { "label": "Analog", "via": ["DAC", "Line amp"], "flow": "audio", "control_point": true },
+        { "label": "AES3", "via": ["AES3"], "flow": "digital", "control_point": false },
+        { "label": "AES67", "via": ["Network audio"], "flow": "digital", "control_point": true },
+        { "label": "Clocking", "via": ["Clocking"], "flow": "digital", "control_point": true },
+        { "label": "RF (out)", "via": ["Transmitter"], "flow": "rf", "control_point": true }
+      ],
+      "inputs": [
+        { "label": "RF (in)", "flow": "rf", "control_point": false }
+      ],
+      "control": { "label": "Network control", "protocol": "AES70", "transport": "IP" }
+    }
+  ],
+
+  "enumerations": {
+    "polar_pattern_position": {
+      "description": "Positions of the OcaSwitch at role PatternType. The workbook gives them as position number and standard pattern name; the parenthesised figure is the first-order gradient coefficient, which is what the companion PatternParameter object carries.",
+      "source_cells": "Q7:Q17",
+      "notes": [
+        "Position 9 is missing from the workbook: the list runs 8 (short shot gun) then 10 (long shot gun). Transcribed as published.",
+        "Position 0 is a generic first-order gradient, selected when the pattern is given by coefficient instead of by name.",
+        "AES42's own list of standard names (cells E7:E16) is the same set without the generic-gradient entry."
+      ],
+      "positions": [
+        { "position": 0, "name": "Generic gradient", "gradient": null },
+        { "position": 1, "name": "omni", "gradient": 0 },
+        { "position": 2, "name": "wide cardioid", "gradient": null },
+        { "position": 3, "name": "open cardioid", "gradient": null },
+        { "position": 4, "name": "cardioid", "gradient": 0.5 },
+        { "position": 5, "name": "supercardioid", "gradient": null },
+        { "position": 6, "name": "hypercardioid", "gradient": null },
+        { "position": 7, "name": "figure-8", "gradient": 1 },
+        { "position": 8, "name": "short shot gun", "gradient": null },
+        { "position": 10, "name": "long shot gun", "gradient": null },
+        { "position": 11, "name": "dummy head", "gradient": null }
+      ]
+    }
+  },
+
+  "parameters": [
+    {
+      "key": "pad",
+      "section": "audio",
+      "source_row": 5,
+      "aes42_name": "Preattenuation",
+      "profile_name": "Pad",
+      "remarks": "Pad is probably easier to understand",
+      "range": "List of positive values",
+      "unit": "dB",
+      "block": "preamp",
+      "oca": {
+        "class": "OcaSwitch",
+        "class_raw": "OcaSwitch",
+        "resolved": true,
+        "role_name": "Pad",
+        "property": ["Position"],
+        "remarks": "Positions are gain values.\nPosition names are gain values."
+      }
+    },
+    {
+      "key": "polar_pattern",
+      "section": "audio",
+      "source_row": 6,
+      "aes42_name": "Polar pattern",
+      "profile_name": "Polar pattern",
+      "remarks": "Verbal description?\nIn AES42 there are no options for patterns of higher orders.\n\nSplit into description and/or parameter for 1st order gradient",
+      "range": "List of pairs (name as string, number as float 0…1); standard names: Omni (0), wide cardioid, open cardioid, cardioid (0.5), supercardioid, hypercardioid, figure-8 (1), short shot gun, long shot gun, dummy head",
+      "unit": null,
+      "block": "preamp",
+      "enumeration": "polar_pattern_position",
+      "oca": {
+        "class": "OcaSwitch",
+        "class_raw": "OcaSwitch",
+        "resolved": true,
+        "role_name": "PatternType",
+        "property": ["Position"],
+        "remarks": "Positions are pattern types.\nPosition names are standard pattern names. 1st-order gradient patterns may be specified either by their common names — omni, cardioid, etc — or as order-1 generic gradients."
+      }
+    },
+    {
+      "key": "pattern_parameter",
+      "section": "audio",
+      "source_row": 18,
+      "aes42_name": null,
+      "profile_name": "Pattern parameter",
+      "remarks": "The numeric companion to PatternType, carrying the gradient coefficient when the pattern is given by number rather than by name.",
+      "range": null,
+      "unit": null,
+      "block": "preamp",
+      "oca": {
+        "class": "OcaFloat32List",
+        "class_raw": "OcaFloat32List",
+        "resolved": true,
+        "role_name": "PatternParameter",
+        "property": ["Value"],
+        "remarks": "Value[1] : order\nValue[2..n] : parameters\nNo of parameters = order"
+      }
+    },
+    {
+      "key": "low_cut",
+      "section": "audio",
+      "source_row": 19,
+      "aes42_name": "Low-Cut",
+      "profile_name": "Low-Cut",
+      "remarks": "No predefined frequencies!!",
+      "range": "List of pairs (description as string, frequency as int) + flag for tunabilty of frequency + frequency range",
+      "unit": "Hz",
+      "block": "preamp",
+      "cardinality": "per-section",
+      "oca": {
+        "class": "OcaFilterClassical",
+        "class_raw": "OcaFilterClassical",
+        "resolved": true,
+        "role_name": "Low-cut(n)",
+        "property": ["Frequency", "Order", "Parameter"],
+        "remarks": "One object per filter section"
+      }
+    },
+    {
+      "key": "gain",
+      "section": "audio",
+      "source_row": 20,
+      "aes42_name": "Gain",
+      "profile_name": "Gain",
+      "remarks": "Makes sense before limiter\n0 dB must be part of range because rated sensitivity is relative to 0dB gain.\nWith 0 dB gain the microphone offers maximum dynamic range.",
+      "range": "Float\nSupported range will be sent",
+      "unit": "dB",
+      "block": "preamp",
+      "oca": {
+        "class": "OcaGain",
+        "class_raw": "OcaGain",
+        "resolved": true,
+        "role_name": "Gain",
+        "property": ["Value"],
+        "remarks": "Max and min are included in the GetGain() method."
+      }
+    },
+    {
+      "key": "polarity",
+      "section": "audio",
+      "source_row": 21,
+      "aes42_name": "Polarity inversion",
+      "profile_name": "Polarity",
+      "remarks": null,
+      "range": "on/off  1/0",
+      "unit": null,
+      "block": "preamp",
+      "oca": {
+        "class": "OcaPolarity",
+        "class_raw": "OcaPolarity",
+        "resolved": true,
+        "role_name": "Polarity",
+        "property": ["Value"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "mute",
+      "section": "audio",
+      "source_row": 22,
+      "aes42_name": "Mute",
+      "profile_name": "Mute",
+      "remarks": null,
+      "range": "on/off  1/0",
+      "unit": null,
+      "block": "preamp",
+      "oca": {
+        "class": "OcaMute",
+        "class_raw": "OcaMute",
+        "resolved": true,
+        "role_name": "Mute",
+        "property": ["Value"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "stereo",
+      "section": "audio",
+      "source_row": 23,
+      "aes42_name": "Stereo",
+      "profile_name": "Stereo",
+      "remarks": "Not in focus at the moment",
+      "range": null,
+      "unit": null,
+      "block": "preamp",
+      "oca": {
+        "class": null,
+        "class_raw": "???",
+        "resolved": false,
+        "role_name": null,
+        "property": [],
+        "remarks": null
+      },
+      "notes": "Left open in the draft: no class, role or property was assigned. There is consequently no profile position for a stereo microphone's pattern arrangement."
+    },
+    {
+      "key": "compressor",
+      "section": "audio",
+      "source_row": 24,
+      "aes42_name": "Compressor",
+      "profile_name": "Compressor",
+      "remarks": "Parameters are mfr specific",
+      "range": null,
+      "unit": "Various",
+      "block": "processor",
+      "oca": {
+        "class": "OcaDynamics",
+        "class_raw": "OcaDynamics",
+        "resolved": true,
+        "role_name": "Compressor",
+        "property": ["(several)"],
+        "remarks": "Might be general enough to cover all cases, with subclassing rarely needed."
+      }
+    },
+    {
+      "key": "eq",
+      "section": "audio",
+      "source_row": 25,
+      "aes42_name": "EQ",
+      "profile_name": "EQ",
+      "remarks": "List of alternative settings or parameter set. Parametric EQ may be part of list and will need set of parameters which will be manufacturer specific.",
+      "range": "List of EQs/curves or parameter set",
+      "unit": null,
+      "block": "processor",
+      "cardinality": "per-section",
+      "oca": {
+        "class": "OcaFilterParametric",
+        "class_raw": "OcaFilterParametric",
+        "resolved": true,
+        "role_name": "EQ(n)",
+        "property": ["Frequency", "Level", "ShapeParameter"],
+        "remarks": "One object per equalization section"
+      }
+    },
+    {
+      "key": "limiter_threshold",
+      "section": "audio",
+      "source_row": 26,
+      "aes42_name": "Limiter",
+      "profile_name": "Limiter threshold",
+      "remarks": "Peak limiter (behind gain)",
+      "range": "Threshold float",
+      "unit": "dB",
+      "block": "processor",
+      "oca": {
+        "class": "OcaThreshold",
+        "class_raw": "OcaThreshold",
+        "resolved": true,
+        "role_name": "LimiterThreshold",
+        "property": ["Threshold"],
+        "remarks": "Shouldn't we also have release time?"
+      }
+    },
+    {
+      "key": "limiter_enable",
+      "section": "audio",
+      "source_row": 27,
+      "aes42_name": "Limiter",
+      "profile_name": "Limiter enable",
+      "remarks": null,
+      "range": "on/off  1/0",
+      "unit": "bool",
+      "block": "processor",
+      "oca": {
+        "class": "OcaLimiterEnable",
+        "class_raw": "OcaLimiterEnable",
+        "resolved": true,
+        "role_name": "LimiterEnable",
+        "property": ["Value"],
+        "remarks": null
+      },
+      "notes": "The workbook leaves the Block cell blank on this row; it belongs with the limiter threshold above it in Processor."
+    },
+    {
+      "key": "delay",
+      "section": "audio",
+      "source_row": 28,
+      "aes42_name": "Delay?",
+      "profile_name": "Delay",
+      "remarks": "Why not?  -JB",
+      "range": null,
+      "unit": null,
+      "block": "processor",
+      "oca": {
+        "class": "OcaTimeInterval",
+        "class_raw": "OcaTimeInterval",
+        "resolved": true,
+        "role_name": "Delay",
+        "property": ["Value"],
+        "remarks": "Number of bits"
+      },
+      "notes": "Proposed rather than carried over from AES42 — the AES42 column reads 'Delay?'. The remark 'Number of bits' is repeated from the Resolution row and appears to be a copy slip."
+    },
+    {
+      "key": "light",
+      "section": "audio",
+      "source_row": 29,
+      "aes42_name": "Light",
+      "profile_name": "Light",
+      "remarks": "Details manufacturer specific",
+      "range": "on/off  1/0",
+      "unit": null,
+      "block": "utility",
+      "oca": {
+        "class": "OcaIdentificationActuator",
+        "class_raw": "OcaIdentification Actuator",
+        "resolved": true,
+        "role_name": "Light",
+        "property": ["Value"],
+        "remarks": null
+      },
+      "notes": "The class name is written with a line break in the workbook; joined here."
+    },
+    {
+      "key": "test_signals",
+      "section": "audio",
+      "source_row": 30,
+      "aes42_name": "Test signals",
+      "profile_name": "Test signals",
+      "remarks": "1kHz sine always available?",
+      "range": "List of Test signals as strings",
+      "unit": null,
+      "block": "utility",
+      "oca": {
+        "class": "OcaSwitch",
+        "class_raw": "OcaSwitch",
+        "resolved": true,
+        "role_name": "Test Signals",
+        "property": ["Setting"],
+        "remarks": "Position values are signal numbers\nPosition names are signal names"
+      },
+      "notes": "The property is written 'Setting' here where every other OcaSwitch row writes 'Position'; the remark makes clear it is the same switch position."
+    },
+    {
+      "key": "sample_rate",
+      "section": "audio",
+      "source_row": 31,
+      "aes42_name": "Sample rate",
+      "profile_name": "Sample rate",
+      "remarks": "Other values should be possible and will be offered in list",
+      "range": "List of sample rates (44.1, 48 and multiples)",
+      "unit": null,
+      "block": "adc",
+      "oca": {
+        "class": "OcaMediaClock",
+        "class_raw": "OcaMediaClock",
+        "resolved": true,
+        "role_name": "Media Clock",
+        "property": ["RatesSupported", "CurrentRate"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "resolution",
+      "section": "audio",
+      "source_row": 32,
+      "aes42_name": null,
+      "profile_name": "Resolution",
+      "remarks": "16 bits / 24 bits / 32 bits\nCompatibility with Ravenna stream definition?",
+      "range": "List of resolutions",
+      "unit": "bit",
+      "block": "adc",
+      "oca": {
+        "class": "OcaUint8",
+        "class_raw": "OcaUint8",
+        "resolved": true,
+        "role_name": "Resolution",
+        "property": ["Value"],
+        "remarks": "Number of bits"
+      },
+      "notes": "Added by the profile: the AES42 column is empty on this row."
+    },
+    {
+      "key": "manufacturer",
+      "section": "audio",
+      "source_row": 34,
+      "aes42_name": "Manufacturer",
+      "profile_name": "Manufacturer",
+      "remarks": null,
+      "range": null,
+      "unit": null,
+      "block": "device",
+      "group": "Other parameters from text of document",
+      "oca": {
+        "class": "OcaDeviceManager",
+        "class_raw": "OcaDeviceManager",
+        "resolved": true,
+        "role_name": null,
+        "property": ["Manufacturer"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "type",
+      "section": "audio",
+      "source_row": 35,
+      "aes42_name": "Type",
+      "profile_name": "Type",
+      "remarks": null,
+      "range": null,
+      "unit": null,
+      "block": null,
+      "group": "Other parameters from text of document",
+      "oca": {
+        "class": null,
+        "class_raw": "?",
+        "resolved": false,
+        "role_name": null,
+        "property": [],
+        "remarks": "What is this, exactly?"
+      },
+      "notes": "Unresolved in the draft — the editor's own remark questions what the parameter means."
+    },
+    {
+      "key": "serial_number",
+      "section": "audio",
+      "source_row": 36,
+      "aes42_name": "Serial number",
+      "profile_name": "Serial number",
+      "remarks": null,
+      "range": null,
+      "unit": null,
+      "block": "device",
+      "group": "Other parameters from text of document",
+      "oca": {
+        "class": "OcaDeviceManager",
+        "class_raw": "OcaDeviceManager",
+        "resolved": true,
+        "role_name": null,
+        "property": ["SerialNumber"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "latency",
+      "section": "audio",
+      "source_row": 37,
+      "aes42_name": "Latency",
+      "profile_name": "Latency",
+      "remarks": null,
+      "range": null,
+      "unit": null,
+      "block": "adc",
+      "group": "Other parameters from text of document",
+      "oca": {
+        "class": "OcaTimeIntervalSensor",
+        "class_raw": "OcaTimeInterval Sensor",
+        "resolved": true,
+        "role_name": "Latency",
+        "property": ["Reading"],
+        "remarks": null
+      },
+      "notes": "A sensor rather than an actuator: latency is reported, not set. The class name is written with a line break in the workbook; joined here."
+    },
+    {
+      "key": "user_label",
+      "section": "audio",
+      "source_row": 38,
+      "aes42_name": "Name given by user",
+      "profile_name": "User label",
+      "remarks": null,
+      "range": null,
+      "unit": null,
+      "block": "device",
+      "group": "Other parameters from text of document",
+      "oca": {
+        "class": "OcaDeviceManager",
+        "class_raw": "OcaDeviceManager",
+        "resolved": true,
+        "role_name": null,
+        "property": ["Label"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "sensitivity",
+      "section": "audio",
+      "source_row": 39,
+      "aes42_name": "Sensitivity",
+      "profile_name": "Sensitivity",
+      "remarks": null,
+      "range": null,
+      "unit": "mV/Pa",
+      "block": "preamp",
+      "group": "Other parameters from text of document",
+      "oca": {
+        "class": "OcaFloat32",
+        "class_raw": "OcaFloat32",
+        "resolved": true,
+        "role_name": "Sensitivity",
+        "property": ["Value"],
+        "remarks": null
+      },
+      "notes": "The workbook writes 'Value' in the Role Name column and 'Sensitivity' in the Property column — the two are transposed relative to every other row. Corrected here; the workbook's literal cells are Role Name='Value', Property='Sensitivity'."
+    },
+
+    {
+      "key": "rf_frequency",
+      "section": "rf",
+      "source_row": 45,
+      "aes42_name": null,
+      "profile_name": "Frequency Select",
+      "remarks": null,
+      "range": null,
+      "unit": "Hz",
+      "applicability": { "transmitter": "y", "receiver": "y", "analyzer": "y", "manager": "y", "xmit_antenna": "m", "rcv_antenna": "m" },
+      "oca": {
+        "class": "OcaFrequencyActuator",
+        "class_raw": "OcaFrequencyActuator",
+        "resolved": true,
+        "role_name": "Frequency",
+        "property": ["Value"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_band",
+      "section": "rf",
+      "source_row": 46,
+      "aes42_name": null,
+      "profile_name": "Frequency Band Select",
+      "remarks": null,
+      "range": null,
+      "unit": "selector",
+      "applicability": { "transmitter": "y", "receiver": "y", "analyzer": "y", "manager": "y", "xmit_antenna": "m", "rcv_antenna": "m" },
+      "oca": {
+        "class": "OcaSwitch",
+        "class_raw": "OcaSwitch",
+        "resolved": true,
+        "role_name": "FrequencyBand",
+        "property": ["Position=Band", "Names=Bandnames"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_mute",
+      "section": "rf",
+      "source_row": 47,
+      "aes42_name": null,
+      "profile_name": "R-F Mute",
+      "remarks": null,
+      "range": null,
+      "unit": "bool",
+      "applicability": { "transmitter": "y", "xmit_antenna": "y" },
+      "oca": {
+        "class": "OcaMute",
+        "class_raw": "OcaMute",
+        "resolved": true,
+        "role_name": "RFMute",
+        "property": ["Value"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_power",
+      "section": "rf",
+      "source_row": 48,
+      "aes42_name": null,
+      "profile_name": "R-F output power",
+      "remarks": null,
+      "range": null,
+      "unit": "selector",
+      "applicability": { "transmitter": "y", "xmit_antenna": "y" },
+      "oca": {
+        "class": "OcaSwitch",
+        "class_raw": "OcaSwitch",
+        "resolved": true,
+        "role_name": "RFPower",
+        "property": ["Position=Power level", "Names=Levelnames"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_transmission_mode",
+      "section": "rf",
+      "source_row": 49,
+      "aes42_name": null,
+      "profile_name": "Transmission mode",
+      "remarks": null,
+      "range": null,
+      "unit": "selector",
+      "applicability": { "transmitter": "y" },
+      "oca": {
+        "class": "OcaSwitch",
+        "class_raw": "OcaSwitch",
+        "resolved": true,
+        "role_name": "TransmissionMode",
+        "property": ["Position=Mode", "Names=Modenames"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_device_name",
+      "section": "rf",
+      "source_row": 50,
+      "aes42_name": null,
+      "profile_name": "Device name",
+      "remarks": "Readonly or app-specific?",
+      "range": null,
+      "unit": "string",
+      "applicability": { "transmitter": "y", "receiver": "y", "analyzer": "y", "manager": "y", "xmit_antenna": "y", "rcv_antenna": "y" },
+      "oca": {
+        "class": "OcaDeviceManager",
+        "class_raw": "OcaDeviceManager",
+        "resolved": true,
+        "role_name": null,
+        "property": [],
+        "remarks": null
+      },
+      "notes": "Role name 'n/a' and property 'tbd' in the workbook: the class is fixed but the property was not chosen."
+    },
+    {
+      "key": "rf_device_id",
+      "section": "rf",
+      "source_row": 51,
+      "aes42_name": null,
+      "profile_name": "Device ID",
+      "remarks": "Readonly or app-specific?",
+      "range": null,
+      "unit": "string",
+      "applicability": { "transmitter": "y", "receiver": "y", "analyzer": "y", "manager": "y", "xmit_antenna": "y", "rcv_antenna": "y" },
+      "oca": {
+        "class": "OcaDeviceManager",
+        "class_raw": "OcaDeviceManager",
+        "resolved": true,
+        "role_name": null,
+        "property": [],
+        "remarks": null
+      },
+      "notes": "Role name 'n/a' and property 'tbd' in the workbook."
+    },
+    {
+      "key": "rf_link_test",
+      "section": "rf",
+      "source_row": 52,
+      "aes42_name": null,
+      "profile_name": "R-F Link test features",
+      "remarks": "Need details",
+      "range": null,
+      "unit": "TBD",
+      "applicability": { "transmitter": "m", "receiver": "m", "analyzer": "m", "manager": "m", "xmit_antenna": "m", "rcv_antenna": "m" },
+      "oca": {
+        "class": null,
+        "class_raw": "tbd",
+        "resolved": false,
+        "role_name": null,
+        "property": [],
+        "remarks": null
+      },
+      "notes": "Placeholder: class, role and property all 'tbd'."
+    },
+    {
+      "key": "rf_auto_channel",
+      "section": "rf",
+      "source_row": 53,
+      "aes42_name": null,
+      "profile_name": "Automatic channel selection enable",
+      "remarks": null,
+      "range": null,
+      "unit": "bool",
+      "applicability": { "transmitter": "m", "receiver": "m", "analyzer": "m", "manager": "m" },
+      "oca": {
+        "class": "OcaBooleanActuator",
+        "class_raw": "OcaBooleanActuator",
+        "resolved": true,
+        "role_name": "AutoChannelSelectEnable",
+        "property": ["Value"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_detect_avoid",
+      "section": "rf",
+      "source_row": 54,
+      "aes42_name": null,
+      "profile_name": "Detect and avoid mode",
+      "remarks": null,
+      "range": null,
+      "unit": "bool",
+      "applicability": { "transmitter": "m", "receiver": "m", "analyzer": "m", "manager": "m" },
+      "oca": {
+        "class": "OcaBooleanActuator",
+        "class_raw": "OcaBooleanActuator",
+        "resolved": true,
+        "role_name": "DetectAndAvoidModeEnable",
+        "property": ["Value"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_swr",
+      "section": "rf",
+      "source_row": 55,
+      "aes42_name": null,
+      "profile_name": "SWR",
+      "remarks": null,
+      "range": null,
+      "unit": "dB",
+      "applicability": { "transmitter": "y", "xmit_antenna": "y" },
+      "oca": {
+        "class": "OcaLevelSensor",
+        "class_raw": "OcaLevelSensor",
+        "resolved": true,
+        "role_name": "StandingWaveRatio",
+        "property": ["Value"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_status",
+      "section": "rf",
+      "source_row": 56,
+      "aes42_name": null,
+      "profile_name": "Status",
+      "remarks": null,
+      "range": null,
+      "unit": "selector",
+      "applicability": { "transmitter": "y", "receiver": "y", "analyzer": "y", "manager": "y", "xmit_antenna": "y", "rcv_antenna": "y" },
+      "oca": {
+        "class": "OcaSwitchSensor",
+        "class_raw": "OcaSwitchSensor",
+        "resolved": true,
+        "role_name": "Status",
+        "property": ["Position=Status", "Names=State names"],
+        "remarks": null
+      }
+    },
+    {
+      "key": "rf_external_filter",
+      "section": "rf",
+      "source_row": 57,
+      "aes42_name": null,
+      "profile_name": "External filter band",
+      "remarks": "Needs clarification",
+      "range": null,
+      "unit": "Hz",
+      "applicability": { "transmitter": "m", "receiver": "m", "analyzer": "m", "manager": "m", "xmit_antenna": "m", "rcv_antenna": "m" },
+      "oca": {
+        "class": null,
+        "class_raw": "tbd",
+        "resolved": false,
+        "role_name": null,
+        "property": [],
+        "remarks": null
+      },
+      "notes": "Placeholder: class, role and property all 'tbd'."
+    },
+    {
+      "key": "rf_booster_gain",
+      "section": "rf",
+      "source_row": 58,
+      "aes42_name": null,
+      "profile_name": "External booster gain",
+      "remarks": null,
+      "range": null,
+      "unit": "dB",
+      "applicability": { "transmitter": "m", "receiver": "m", "analyzer": "m", "manager": "m", "xmit_antenna": "m", "rcv_antenna": "m" },
+      "oca": {
+        "class": "OcaGain",
+        "class_raw": "OcaGain",
+        "resolved": true,
+        "role_name": "BoosterGain",
+        "property": ["Value"],
+        "remarks": null
+      },
+      "notes": "The same class as the microphone's Gain, told apart only by its block and role."
+    },
+    {
+      "key": "rf_lock",
+      "section": "rf",
+      "source_row": 59,
+      "aes42_name": null,
+      "profile_name": "Lock",
+      "remarks": "Needs clarification",
+      "range": null,
+      "unit": "bool",
+      "applicability": { "transmitter": "m", "receiver": "m", "analyzer": "m", "manager": "m", "xmit_antenna": "m", "rcv_antenna": "m" },
+      "oca": {
+        "class": "OcaDeviceManager",
+        "class_raw": "OcaDeviceManager",
+        "resolved": true,
+        "role_name": "Lock",
+        "property": ["(method) Lock()"],
+        "remarks": "maybe"
+      },
+      "notes": "The only profile entry bound to a method rather than a property."
+    }
+  ],
+
+  "open_issues": [
+    { "key": "blocks-sheet-empty", "summary": "The Blocks sheet carries only its column headers — Name, ID, Purpose — and no rows. Block identity here is derived from the Block column of the Classes sheet and from the block diagrams.", "source": "Blocks!B7:D7" },
+    { "key": "stereo-unassigned", "summary": "Stereo has no class, role or property: 'Not in focus at the moment'.", "source": "Classes!23" },
+    { "key": "type-unassigned", "summary": "Type has no class and the editor's remark asks what the parameter is.", "source": "Classes!35" },
+    { "key": "rf-tbd", "summary": "R-F link test features and external filter band are both placeholders with class, role and property 'tbd'.", "source": "Classes!52, Classes!57" },
+    { "key": "device-name-property", "summary": "RF device name and device ID name OcaDeviceManager but leave the property 'tbd'.", "source": "Classes!50, Classes!51" },
+    { "key": "sensitivity-transposed", "summary": "The Sensitivity row has Role Name and Property swapped relative to every other row.", "source": "Classes!39" },
+    { "key": "pattern-position-9", "summary": "The polar-pattern position list skips 9, running 8 (short shot gun) then 10 (long shot gun).", "source": "Classes!Q15:Q16" },
+    { "key": "limiter-enable-block", "summary": "The Limiter enable row leaves its Block cell blank; it belongs with the limiter threshold in Processor.", "source": "Classes!27" }
+  ],
+
+  "crosswalk": {
+    "description": "NOT PART OF AES-X230. This repository's mapping from the catalogue's own vocabulary onto profile enumerations, so a scraped microphone record can be read as an X230 profile instance. Kept beside the profile rather than in the application so the whole interpretation is one reviewable file.",
+    "pattern_positions": [
+      { "corpus": "Omnidirectional", "position": 1, "position_name": "omni", "gradient": 0 },
+      { "corpus": "Wide Cardioid", "position": 2, "position_name": "wide cardioid", "gradient": null },
+      { "corpus": "Cardioid", "position": 4, "position_name": "cardioid", "gradient": 0.5 },
+      { "corpus": "Supercardioid", "position": 5, "position_name": "supercardioid", "gradient": null },
+      { "corpus": "Hypercardioid", "position": 6, "position_name": "hypercardioid", "gradient": null },
+      { "corpus": "Bidirectional", "position": 7, "position_name": "figure-8", "gradient": 1 },
+      { "corpus": "Shotgun", "position": 8, "position_name": "short shot gun", "gradient": null, "note": "The profile separates short from long shotgun; the catalogue does not, so the shorter is assumed." },
+      { "corpus": "Binaural", "position": 11, "position_name": "dummy head", "gradient": null },
+      { "corpus": "X/Y Stereo", "position": null, "position_name": null, "gradient": null, "note": "No profile position: X230 leaves stereo unassigned." },
+      { "corpus": "Mid-Side Stereo", "position": null, "position_name": null, "gradient": null, "note": "No profile position: X230 leaves stereo unassigned." },
+      { "corpus": "Blumlein", "position": null, "position_name": null, "gradient": null, "note": "No profile position: X230 leaves stereo unassigned." }
+    ],
+    "digital_connectors": {
+      "description": "Interface connectors that imply the device converts on board, and therefore instantiates the ADC block.",
+      "match": ["USB", "Apple Lightning", "Apple 30-pin", "Apple Headset TRRS", "AES3", "AES67", "Dante"]
+    },
+    "statuses": [
+      { "key": "mapped", "label": "Mapped", "description": "The catalogue supplies a value for this profile parameter." },
+      { "key": "absent", "label": "Absent", "description": "The catalogue positively records that the device does not have this function — the equivalent of the profile's own 'N' type code." },
+      { "key": "unknown", "label": "Unknown / NULL", "description": "The parameter applies to this device but the catalogue holds nothing that could answer it. The value is null." },
+      { "key": "not-applicable", "label": "Not applicable", "description": "The parameter belongs to a block this device does not instantiate." },
+      { "key": "undefined-in-profile", "label": "Undefined in profile", "description": "X230 itself leaves the binding open, so there is nothing to conform to." }
+    ],
+    "access": [
+      { "key": "aes70", "label": "AES70 control point", "description": "Settable over the network, as the profile intends." },
+      { "key": "manual-switch", "label": "Manual switch", "description": "The function exists but is operated by hand. The value is real; the control point is not." },
+      { "key": "read-only", "label": "Read-only", "description": "A descriptive value the device would report rather than accept." }
+    ]
+  }
+}

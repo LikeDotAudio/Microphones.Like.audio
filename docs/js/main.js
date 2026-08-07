@@ -24,8 +24,12 @@ async function boot() {
     return;
   }
   state.limit = PAGE();
-  $("stat").textContent = state.index.total_models.toLocaleString() +
-    " mics · " + state.index.total_brands + " brands";
+  const idx = state.index;
+  $("stat").textContent = [
+    idx.total_microphones.toLocaleString() + " mics",
+    idx.total_rf ? idx.total_rf + " wireless" : null,
+    idx.total_brands + " brands",
+  ].filter(Boolean).join(" · ");
   wireFilterBar();
   renderTree();
   route();

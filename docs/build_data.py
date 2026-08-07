@@ -163,7 +163,7 @@ def build_config(mics, rf_records, warn):
     for rec in rf_records:
         for band in rec["classification"]["bands"]:
             band_counts[band] += 1
-    bands = [{"key": "all", "label": "Any band", "count": len(rf_records)}] + [
+    rf_bands = [{"key": "all", "label": "Any band", "count": len(rf_records)}] + [
         {"key": b["key"], "label": b["label"], "count": band_counts.get(b["key"], 0)}
         for b in V.RF_BANDS
     ]
@@ -191,7 +191,7 @@ def build_config(mics, rf_records, warn):
         "kinds": [dict(k, count=(len(mics) if k["key"] == "mic" else
                                  len(rf_records) if k["key"] == "rf" else total))
                   for k in V.KINDS],
-        "rfBands": bands,
+        "rfBands": rf_bands,
         "rfSpectrum": rf_spectrum,
         "rfSorts": V.RF_SORTS,
         "rfRangeColumns": V.RF_RANGE_COLUMNS,

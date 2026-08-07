@@ -116,6 +116,9 @@ export function drawDiagram(chain) {
   const svg = svgEl("svg", {
     class: "dg", viewBox: `0 0 ${width} ${height}`,
     width, height, role: "img",
+    // Left-align when the canvas is narrower than the pane, rather than
+    // floating the chain in the middle of an empty box.
+    preserveAspectRatio: "xMinYMid meet",
     "aria-label": chain.blocks.map((b) => b.label).join(" → "),
   });
 
