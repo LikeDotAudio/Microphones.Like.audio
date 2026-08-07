@@ -142,7 +142,7 @@ const EXTRACTORS = {
   },
 
   power(mic) {
-    const p = mic.specifications.power || {};
+    const p = (mic.specifications || {}).power || {};
     const lines = [];
     const detail = [];
     if (p.requires_phantom_power) {
@@ -250,6 +250,7 @@ const EXTRACTORS = {
 /* Which chain a record uses, and the blocks that survive its data. */
 export function buildChain(rec) {
   const isRf = rec.classification && rec.classification.kind === "rf";
+  const kind = isRf ? "rf" : "mic";
   const spec = isRf ? cfg().rfChain : cfg().micChain;
   const blocks = [];
 
@@ -269,6 +270,7 @@ export function buildChain(rec) {
 
   const feeds = [];
   for (const def of cfg().chainFeeds) {
+    if (def.kinds && !def.kinds.includes(kind)) continue;
     if (!blocks.some((b) => b.key === def.into)) continue;
     const fn = EXTRACTORS[def.source];
     const got = fn ? fn(rec) : null;

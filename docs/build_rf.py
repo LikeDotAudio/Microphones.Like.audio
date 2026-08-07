@@ -85,6 +85,13 @@ def build_ranges(model_ranges, warn, where):
         if band not in ("UHF", "VHF", None):
             warn("%s range %r has an unknown band %r" % (where, key, band))
             band = None
+
+        # The source carries a nameless 0 Hz row as its "nothing selected"
+        # placeholder. Filing that as a product would put a radio that tunes
+        # nowhere in the catalogue and drag the spectrum axis down to zero.
+        if not str(key).strip() and not start and not end:
+            warn("%s has an empty placeholder range; dropped" % where)
+            continue
         rows.append({
             "key": str(key),
             "name": str(rec.get("range") or key),
@@ -136,6 +143,7 @@ def load(warn):
 
             ranges = build_ranges(model_ranges, warn, where)
             if not ranges:
+                warn("%s has no usable ranges; dropped" % where)
                 continue
 
             # 'rf-' keeps these clear of any microphone model slug in the same

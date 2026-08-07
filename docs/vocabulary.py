@@ -202,11 +202,12 @@ RF_CHAIN = [
 ]
 
 # Feeds drawn entering the chain from below rather than in line with it.
+# `kinds` keeps each feed to the record type whose fields its extractor reads.
 CHAIN_FEEDS = [
     {"key": "power", "label": "POWER", "source": "power", "into": "preamp",
-     "flow": "power", "optional": True},
+     "flow": "power", "optional": True, "kinds": ["mic"]},
     {"key": "control", "label": "CONTROL", "source": "rfControl", "into": "transmitter",
-     "flow": "control", "optional": True},
+     "flow": "control", "optional": True, "kinds": ["rf"]},
 ]
 
 # Legend for the flow colours, so the drawing explains its own wiring.
