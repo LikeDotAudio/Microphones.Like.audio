@@ -76,6 +76,8 @@
   }
 
   * { box-sizing: border-box; }
+  /* Beats the display: grid/flex the view containers set. */
+  [hidden] { display: none !important; }
   html, body { height: 100%; }
   body {
     margin: 0;
@@ -184,16 +186,21 @@
   }
   .leaf:hover { background: var(--panel-2); color: var(--text); }
   .leaf.sel { background: var(--accent-soft); color: var(--text); font-weight: 500; }
-  .leaf .dot { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); }
+  .leaf .dot {
+    flex: none; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--tc, var(--faint));
+  }
 
   /* Transducer colour coding — one mapping shared by tree dots, list chips and
-     charts, so a type keeps its hue everywhere. Always paired with its label. */
-  .t-condenser { background: var(--s1); }
-  .t-dynamic   { background: var(--s2); }
-  .t-ribbon    { background: var(--s3); }
-  .t-boundary  { background: var(--s4); }
-  .t-hybrid    { background: var(--s5); }
-  .t-unknown   { background: var(--faint); }
+     charts, so a type keeps its hue everywhere. Always paired with its label.
+     Each rule also publishes --tc so more specific selectors (.leaf .dot,
+     .tag.type) can pick the hue up without a specificity fight. */
+  .t-condenser { background: var(--s1); --tc: var(--s1); }
+  .t-dynamic   { background: var(--s2); --tc: var(--s2); }
+  .t-ribbon    { background: var(--s3); --tc: var(--s3); }
+  .t-boundary  { background: var(--s4); --tc: var(--s4); }
+  .t-hybrid    { background: var(--s5); --tc: var(--s5); }
+  .t-unknown   { background: var(--faint); --tc: var(--faint); }
 
   /* ---------- model list ---------- */
   .filters {
@@ -242,7 +249,7 @@
   }
   .tag.price { color: var(--text); font-variant-numeric: tabular-nums; }
   .tag.disc { color: #d97706; }
-  .tag.type { color: #fff; }
+  .tag.type { background: var(--tc, var(--chip)); color: #fff; }
   .card .brandline { font-size: 11px; color: var(--faint); }
 
   /* ---------- detail ---------- */
@@ -275,6 +282,9 @@
   .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
   .prose { color: var(--text); }
   .prose p { margin: 0 0 10px; }
+  /* Scraped copy embeds full-size photos — keep them inside the pane. */
+  .prose img { max-width: min(100%, 300px); height: auto; border-radius: 6px; margin: 4px 12px 8px 0; }
+  .prose a { overflow-wrap: anywhere; }
   .prose ul { margin: 0 0 10px; padding-left: 20px; }
   blockquote {
     margin: 0 0 10px; padding: 8px 0 8px 12px;
@@ -475,8 +485,8 @@
         <button class="chip" data-trait="multi">Multipattern</button>
         <button class="chip" data-trait="stereo">Stereo</button>
         <button class="chip" data-avail="current">Current</button>
-        <button class="chip clear push" id="reset" hidden>Clear filters</button>
-        <select id="sort">
+        <button class="chip clear" id="reset" hidden>Clear filters</button>
+        <select id="sort" class="push">
           <option value="name">Name</option>
           <option value="price">Price ↑</option>
           <option value="price-desc">Price ↓</option>
@@ -678,7 +688,8 @@ const state = {
   brandData: new Map(),    // slug -> full records, lazily fetched
   query: "",
   patterns: new Set(),     // selected polar-pattern keys, OR-ed together
-  brand: null,             // null = browse every brand at once
+  scope: null,             // brand the middle pane lists; null = the whole catalogue
+  brand: null,             // brand of the selected mic
   model: null,
   type: "all",
   form: "all",
@@ -751,10 +762,10 @@ function renderTree() {
     el("div", "twisty"),
     el("div", "brand-name", "All microphones"),
     el("div", "count", String(state.index.total_models)));
-  allRow.addEventListener("click", () => go(null));
+  allRow.addEventListener("click", () => openScope(null));
   all.dataset.all = "1";
   all.appendChild(allRow);
-  if (!state.brand) all.classList.add("sel");
+  if (!state.scope) all.classList.add("sel");
   frag.appendChild(all);
 
   for (const brand of state.index.brands) {
@@ -777,7 +788,7 @@ function renderTree() {
       ? hit.models.length + "/" + brand.count
       : String(brand.count);
     row.append(tw, el("div", "brand-name", brand.name), el("div", "count", count));
-    row.addEventListener("click", () => { node.classList.add("open"); go(brand.slug); });
+    row.addEventListener("click", () => { node.classList.add("open"); openScope(brand.slug); });
     node.appendChild(row);
 
     const kidbox = el("div", "brand-kids");
@@ -803,7 +814,7 @@ function renderTree() {
 
 function syncTreeSelection() {
   document.querySelectorAll("#tree .brand").forEach((n) => {
-    const on = n.dataset.all ? !state.brand : n.dataset.slug === state.brand;
+    const on = n.dataset.all ? !state.scope : n.dataset.slug === state.brand;
     n.classList.toggle("sel", on);
     if (on) n.classList.add("open");
     n.querySelectorAll(".leaf").forEach((l) =>
@@ -878,7 +889,7 @@ function modelCard(m, brand, showBrand) {
 
 function renderModels() {
   const host = $("models");
-  const brand = state.byBrand.get(state.brand) || null;
+  const brand = state.byBrand.get(state.scope) || null;
   host.innerHTML = "";
 
   $("filters").hidden = false;
@@ -950,6 +961,11 @@ async function renderDetail() {
     host.appendChild(el("div", "empty", "Failed to load: " + err.message));
     return;
   }
+  if (!mic) {                                        // hand-typed or stale hash
+    host.innerHTML = "";
+    host.appendChild(el("div", "empty", "No model “" + state.model + "” in " + state.brand));
+    return;
+  }
   if (state.model !== mic.source.model_slug) return; // superseded by a newer click
   host.innerHTML = "";
   host.appendChild(buildDetail(mic));
@@ -986,9 +1002,26 @@ function boxed(title, node) {
   return b;
 }
 
+/* A bare anchor with no text of its own — for wrapping an image. */
+function linkWrap(url) {
+  const a = el("a");
+  a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+  return a;
+}
+
 function extLink(url, text) {
   const a = el("a", null, text || url);
   a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+  return a;
+}
+
+/* recordinghacks permalinks we also hold locally become in-app navigation;
+   anything else opens in a new tab. */
+function appLink(url, text) {
+  const target = parsePermalink(url);
+  if (!target) return extLink(url, text);
+  const a = el("a", "inapp", text || url);
+  a.href = hashFor(target.brand, target.model);
   return a;
 }
 
@@ -1009,7 +1042,7 @@ function buildDetail(mic) {
     img.src = photo.thumb_url || photo.full_url;
     img.alt = photo.alt || id.full_name || "";
     img.addEventListener("error", () => box.remove());
-    if (photo.full_url) { const a = extLink(photo.full_url, ""); a.appendChild(img); box.appendChild(a); }
+    if (photo.full_url) { const a = linkWrap(photo.full_url); a.appendChild(img); box.appendChild(a); }
     else box.appendChild(img);
     hero.appendChild(box);
   }
@@ -1154,7 +1187,7 @@ function buildDetail(mic) {
       img.src = g.image_url;
       img.alt = g.alt || "";
       img.addEventListener("error", () => box.remove());
-      box.appendChild(g.compare_url ? (() => { const a = extLink(g.compare_url, ""); a.appendChild(img); return a; })() : img);
+      box.appendChild(g.compare_url ? (() => { const a = linkWrap(g.compare_url); a.appendChild(img); return a; })() : img);
       box.appendChild(el("div", "cap", g.pattern || g.alt || ""));
       wrap.appendChild(box);
     }
@@ -1278,6 +1311,506 @@ function parsePermalink(url) {
   return state.byBrand.has(brand) ? { brand, model: decodeURIComponent(m[2]) } : null;
 }
 
+/* ================================================================ STATISTICS
+   Everything here is derived from index.json in the browser — the stats view
+   needs no extra fetch and always agrees with what the tree is showing. */
+
+/* Stacked-bar series. Boundary/hybrid/unknown are ~7% between them and would
+   render as slivers, so they fold into one "Other" slot rather than eating
+   categorical hues that then fail CVD separation against their neighbours. */
+const TYPE_SERIES = [
+  { key: "condenser", label: "Condenser", css: "var(--s1)" },
+  { key: "dynamic", label: "Dynamic", css: "var(--s2)" },
+  { key: "ribbon", label: "Ribbon", css: "var(--s3)" },
+  { key: "other", label: "Other / unspecified", css: "var(--s4)" },
+];
+const typeBucket = (t) => (t === "condenser" || t === "dynamic" || t === "ribbon") ? t : "other";
+const TYPE_CSS = {
+  condenser: "var(--s1)", dynamic: "var(--s2)", ribbon: "var(--s3)",
+  boundary: "var(--s4)", hybrid: "var(--s5)", unknown: "var(--faint)",
+};
+
+let flatCache = null;
+function allModels() {
+  if (flatCache) return flatCache;
+  flatCache = [];
+  for (const b of state.index.brands) {
+    for (const m of b.models) flatCache.push(Object.assign({ brand: b.name, brandSlug: b.slug }, m));
+  }
+  return flatCache;
+}
+
+const countBy = (rows, fn) => {
+  const c = new Map();
+  for (const r of rows) {
+    for (const k of [].concat(fn(r))) {
+      if (k == null) continue;
+      c.set(k, (c.get(k) || 0) + 1);
+    }
+  }
+  return [...c.entries()].sort((a, b) => b[1] - a[1]);
+};
+
+function median(nums) {
+  if (!nums.length) return null;
+  const s = nums.slice().sort((a, b) => a - b);
+  const mid = s.length >> 1;
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+/* ------------------------------------------------------------ chart pieces */
+function tooltipFor(node, html) {
+  node.addEventListener("mouseenter", () => {
+    const tip = $("tip");
+    tip.innerHTML = html;
+    tip.hidden = false;
+  });
+  node.addEventListener("mousemove", (e) => {
+    const tip = $("tip");
+    const pad = 14;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.min(e.clientX + pad, innerWidth - w - 8) + "px";
+    tip.style.top = Math.max(8, e.clientY - h - pad) + "px";
+  });
+  node.addEventListener("mouseleave", () => { $("tip").hidden = true; });
+}
+
+/* rows: [{label, value, css?, onClick?, tip?}] */
+function hbars(rows, opt) {
+  const { labelWidth = 122, total = null, max = null } = opt || {};
+  const top = max != null ? max : Math.max(1, ...rows.map((r) => r.value));
+  const box = el("div", "rows");
+  box.style.setProperty("--labelw", labelWidth + "px");
+  for (const r of rows) {
+    const line = el("div", "row");
+    const lab = el("div", "rl" + (r.onClick ? " link" : ""), r.label);
+    lab.title = r.label;
+    if (r.onClick) lab.addEventListener("click", r.onClick);
+
+    const track = el("div", "track");
+    const fill = el("b");
+    fill.style.width = (r.value / top * 100).toFixed(2) + "%";
+    fill.style.background = r.css || "var(--s1)";
+    track.appendChild(fill);
+    tooltipFor(track, r.tip || ("<b>" + esc(r.label) + "</b><br><span class='tv'>" +
+      r.value.toLocaleString() + (total ? " · " + (r.value / total * 100).toFixed(1) + "%" : "") + "</span>"));
+
+    const val = el("div", "rv", r.value.toLocaleString());
+    if (total) val.appendChild(el("small", null, "  " + (r.value / total * 100).toFixed(1) + "%"));
+
+    line.append(lab, track, val);
+    box.appendChild(line);
+  }
+  return box;
+}
+
+/* rows: [{label, parts:[{key,label,value,css}], total, onClick?}] */
+function stackedBars(rows, opt) {
+  const { labelWidth = 150 } = opt || {};
+  const top = Math.max(1, ...rows.map((r) => r.total));
+  const box = el("div", "rows");
+  box.style.setProperty("--labelw", labelWidth + "px");
+  for (const r of rows) {
+    const line = el("div", "row");
+    const lab = el("div", "rl link", r.label);
+    lab.title = r.label;
+    if (r.onClick) lab.addEventListener("click", r.onClick);
+
+    const track = el("div", "track");
+    track.style.width = (r.total / top * 100).toFixed(2) + "%";
+    for (const p of r.parts) {
+      if (!p.value) continue;
+      const seg = el("b");
+      seg.style.flex = p.value + " 0 0";
+      seg.style.background = p.css;
+      tooltipFor(seg, "<b>" + esc(r.label) + "</b><br><span class='tv'>" + esc(p.label) + ": " +
+        p.value + " of " + r.total + " · " + (p.value / r.total * 100).toFixed(0) + "%</span>");
+      track.appendChild(seg);
+    }
+    const wrap = el("div");
+    wrap.style.cssText = "display:flex";
+    wrap.appendChild(track);
+
+    line.append(lab, wrap, el("div", "rv", String(r.total)));
+    box.appendChild(line);
+  }
+  return box;
+}
+
+/* bins: [{label, value}] */
+function histogram(bins) {
+  const top = Math.max(1, ...bins.map((b) => b.value));
+  const wrap = el("div");
+  const plot = el("div", "hist");
+  for (const b of bins) {
+    const col = el("div", "col");
+    col.appendChild(el("em", null, b.value.toLocaleString()));
+    const bar = el("b");
+    bar.style.height = (b.value / top * 100).toFixed(1) + "%";
+    col.appendChild(bar);
+    tooltipFor(col, "<b>" + esc(b.label) + "</b><br><span class='tv'>" + b.value.toLocaleString() + " mics</span>");
+    plot.appendChild(col);
+  }
+  const axis = el("div", "histx");
+  bins.forEach((b) => axis.appendChild(el("span", null, b.label)));
+  wrap.append(plot, axis);
+  return wrap;
+}
+
+function figure(title, note, body, wide) {
+  const f = el("figure", "fig" + (wide ? " wide" : ""));
+  f.appendChild(el("figcaption", null, title));
+  if (note) f.appendChild(el("div", "note", note));
+  f.appendChild(body);
+  return f;
+}
+
+function legendFor(series) {
+  const lg = el("div", "legend");
+  for (const s of series) {
+    const item = el("span");
+    const sw = el("i");
+    sw.style.background = s.css;
+    item.append(sw, document.createTextNode(s.label));
+    lg.appendChild(item);
+  }
+  return lg;
+}
+
+/* --------------------------------------------------------------- the view */
+const explorer = { q: "", type: "all", status: "all", pattern: "all", sort: "brand", dir: 1, limit: 250 };
+
+function renderStats() {
+  const host = $("stats");
+  host.innerHTML = "";
+  const wrap = el("div", "statswrap");
+  const rows = allModels();
+  const n = rows.length;
+
+  /* ---- headline tiles ---- */
+  const priced = rows.filter((r) => r.msrp != null).map((r) => r.msrp);
+  const years = rows.filter((r) => r.year).map((r) => r.year);
+  const types = new Map(countBy(rows, (r) => r.type || "unknown"));
+  const tile = (nVal, label, sub) => {
+    const t = el("div", "tile");
+    t.appendChild(el("div", "n", nVal));
+    t.appendChild(el("div", "l", label));
+    if (sub) t.appendChild(el("div", "sub2", sub));
+    return t;
+  };
+  const pct = (x) => (x / n * 100).toFixed(1) + "%";
+  const tiles = el("div", "tiles");
+  tiles.append(
+    tile(n.toLocaleString(), "Microphones", "across " + state.index.total_brands + " brands"),
+    tile(String(state.index.total_brands), "Brands",
+      "median " + median(state.index.brands.map((b) => b.count)) + " models each"),
+    tile(money(median(priced)), "Median MSRP", priced.length + " priced · " +
+      money(Math.min(...priced)) + "–" + money(Math.max(...priced))),
+    tile(pct(types.get("condenser") || 0), "Condenser",
+      (types.get("dynamic") || 0) + " dynamic · " + (types.get("ribbon") || 0) + " ribbon"),
+    tile(String(rows.filter((r) => r.tube).length), "Tube mics", pct(rows.filter((r) => r.tube).length) + " of catalogue"),
+    tile(String(rows.filter((r) => r.multi).length), "Multipattern", pct(rows.filter((r) => r.multi).length) + " of catalogue"),
+    tile(pct(rows.filter((r) => r.avail === "discontinued").length), "Discontinued",
+      rows.filter((r) => r.avail === "current").length + " still current"),
+    tile(Math.min(...years) + "–" + Math.max(...years), "Release years", years.length + " dated models"),
+  );
+  wrap.append(el("h2", "vh", "The collection at a glance"), tiles);
+
+  /* ---- charts ---- */
+  const figs = el("div", "figs");
+
+  // Transducer type — each type keeps the hue it wears everywhere else.
+  const typeRows = countBy(rows, (r) => r.type || "unknown").map(([k, v]) => ({
+    label: cap(k), value: v, css: TYPE_CSS[k] || "var(--faint)",
+    onClick: () => { location.hash = "#/"; },
+  }));
+  figs.appendChild(figure("Transducer types", "Every microphone in the dataset, by capsule technology.",
+    hbars(typeRows, { total: n, labelWidth: 96 })));
+
+  // Polar patterns — grouped exactly like the header buttons.
+  const patRows = PATTERNS.map((p) => ({
+    label: p.label.replace(/ \(.*\)$/, ""),
+    value: rows.filter((r) => p.multi ? r.multi : (r.patterns || []).some((x) => p.match.includes(x))).length,
+    css: "var(--s1)",
+  })).sort((a, b) => b.value - a.value);
+  figs.appendChild(figure("Polar patterns", "A switchable mic counts once for every pattern it offers, so these sum past " + n + ".",
+    hbars(patRows, { total: n, labelWidth: 148 })));
+
+  // Form factor
+  const formRows = countBy(rows, (r) => r.form || "unspecified")
+    .map(([k, v]) => ({ label: cap(k), value: v, css: "var(--s1)" }));
+  figs.appendChild(figure("Form factors", "Body style as catalogued by the source.",
+    hbars(formRows, { total: n, labelWidth: 104 })));
+
+  // Price distribution
+  const PRICE_BINS = [
+    ["< $100", 0, 100], ["$100–249", 100, 250], ["$250–499", 250, 500],
+    ["$500–999", 500, 1000], ["$1k–2k", 1000, 2000], ["$2k–5k", 2000, 5000],
+    ["$5k+", 5000, Infinity],
+  ];
+  figs.appendChild(figure("Price distribution",
+    priced.length + " of " + n + " models carry an MSRP.",
+    histogram(PRICE_BINS.map(([label, lo, hi]) => ({
+      label, value: priced.filter((p) => p >= lo && p < hi).length,
+    })))));
+
+  // Releases by decade
+  const decades = countBy(rows.filter((r) => r.year), (r) => Math.floor(r.year / 10) * 10)
+    .sort((a, b) => a[0] - b[0]);
+  figs.appendChild(figure("Releases by decade", years.length + " models carry a release year.",
+    histogram(decades.map(([d, v]) => ({ label: d + "s", value: v })))));
+
+  // Attributes
+  const attrs = [
+    ["Tube", rows.filter((r) => r.tube).length],
+    ["Multipattern", rows.filter((r) => r.multi).length],
+    ["Stereo", rows.filter((r) => r.stereo).length],
+    ["Sold as a set", rows.filter((r) => r.set).length],
+    ["Has MSRP", priced.length],
+    ["Currently sold", rows.filter((r) => r.avail === "current").length],
+  ].map(([label, v]) => ({ label, value: v, css: "var(--s1)" }));
+  figs.appendChild(figure("Attributes", "Share of the catalogue carrying each flag.",
+    hbars(attrs, { total: n, max: n, labelWidth: 110 })));
+
+  wrap.append(el("h2", "vh", "Distributions"), figs);
+
+  /* ---- type by brand (the wide one) ---- */
+  wrap.append(el("h2", "vh", "Type by brand"), buildTypeByBrand(rows));
+
+  /* ---- explorer ---- */
+  wrap.append(el("h2", "vh", "Data explorer"), buildExplorer());
+
+  host.appendChild(wrap);
+}
+
+function buildTypeByBrand(rows) {
+  const state2 = { top: 25, order: "total" };
+  const fig = el("figure", "fig wide");
+  fig.appendChild(el("figcaption", null, "Transducer mix by brand"));
+  fig.appendChild(el("div", "note", "Bar length is the brand's catalogue size; segments are its split by type. Click a brand to open it."));
+
+  const bar = el("div", "figbar");
+  const mkSel = (label, options, onChange) => {
+    const s = el("select");
+    options.forEach(([v, t]) => { const o = el("option", null, t); o.value = v; s.appendChild(o); });
+    s.addEventListener("change", () => { onChange(s.value); draw(); });
+    const w = el("label", null, label + " ");
+    w.style.cssText = "font-size:11.5px;color:var(--muted)";
+    w.appendChild(s);
+    return w;
+  };
+  bar.append(
+    mkSel("Show", [["25", "Top 25"], ["50", "Top 50"], ["100", "Top 100"], ["999", "All brands"]],
+      (v) => { state2.top = +v; }),
+    mkSel("Order by", [["total", "Catalogue size"], ["condenser", "% condenser"], ["dynamic", "% dynamic"], ["ribbon", "% ribbon"], ["name", "Name"]],
+      (v) => { state2.order = v; }),
+  );
+  fig.appendChild(bar);
+  fig.appendChild(legendFor(TYPE_SERIES));
+
+  const plot = el("div");
+  fig.appendChild(plot);
+
+  function draw() {
+    const byBrand = new Map();
+    for (const r of rows) {
+      let e = byBrand.get(r.brandSlug);
+      if (!e) { e = { label: r.brand, slug: r.brandSlug, total: 0, condenser: 0, dynamic: 0, ribbon: 0, other: 0 }; byBrand.set(r.brandSlug, e); }
+      e.total++;
+      e[typeBucket(r.type)]++;
+    }
+    let list = [...byBrand.values()];
+    const share = (e, k) => e[k] / e.total;
+    if (state2.order === "name") list.sort((a, b) => a.label.localeCompare(b.label));
+    else if (state2.order === "total") list.sort((a, b) => b.total - a.total);
+    else list.sort((a, b) => share(b, state2.order) - share(a, state2.order) || b.total - a.total);
+    list = list.slice(0, state2.top);
+
+    plot.innerHTML = "";
+    plot.appendChild(stackedBars(list.map((e) => ({
+      label: e.label,
+      total: e.total,
+      onClick: () => { location.hash = "#/" + encodeURIComponent(e.slug); },
+      parts: TYPE_SERIES.map((s) => ({ label: s.label, value: e[s.key], css: s.css })),
+    })), { labelWidth: 168 }));
+    if (state2.top < 999) {
+      plot.appendChild(el("div", "note", "Showing " + list.length + " of " + byBrand.size + " brands."));
+    }
+  }
+  draw();
+  return fig;
+}
+
+/* ------------------------------------------------------------- explorer */
+/* The source records switchable mics with a catch-all icon name; spell it out
+   rather than showing "9 polar patterns" mid-list. */
+const PATTERN_DISPLAY = {
+  "9 polar patterns": "9 switchable",
+  "continuously variable pattern selection": "continuously variable",
+};
+const showPatterns = (list) => (list || []).map((p) => PATTERN_DISPLAY[p] || p).join(", ") || "—";
+
+const EXP_COLS = [
+  { key: "brand", label: "Brand" },
+  { key: "model", label: "Model" },
+  { key: "type", label: "Type" },
+  { key: "patterns", label: "Patterns", wrap: true },
+  { key: "form", label: "Form" },
+  { key: "msrp", label: "MSRP", num: true },
+  { key: "year", label: "Year", num: true },
+  { key: "avail", label: "Status" },
+];
+
+function explorerRows() {
+  const q = explorer.q.toLowerCase();
+  const pat = explorer.pattern === "all" ? null : PATTERN_BY_KEY.get(explorer.pattern);
+  let rows = allModels().filter((r) => {
+    if (explorer.type !== "all" && (r.type || "unknown") !== explorer.type) return false;
+    if (explorer.status !== "all" && r.avail !== explorer.status) return false;
+    if (pat && !(pat.multi ? r.multi : (r.patterns || []).some((x) => pat.match.includes(x)))) return false;
+    if (q && !((r.brand + " " + r.model + " " + (r.subtitle || "")).toLowerCase().includes(q))) return false;
+    return true;
+  });
+  const k = explorer.sort, dir = explorer.dir;
+  rows.sort((a, b) => {
+    let x = a[k], y = b[k];
+    if (k === "patterns") { x = (x || []).length; y = (y || []).length; }
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;              // blanks always sink
+    if (y == null) return -1;
+    const c = typeof x === "number" ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true });
+    return c * dir || String(a.model).localeCompare(String(b.model), undefined, { numeric: true });
+  });
+  return rows;
+}
+
+function buildExplorer() {
+  const box = el("div");
+  const bar = el("div", "expbar");
+
+  const q = el("input");
+  q.type = "search";
+  q.placeholder = "Filter brand, model or subtitle…";
+  q.value = explorer.q;
+  q.addEventListener("input", () => { explorer.q = q.value.trim(); explorer.limit = 250; refresh(); });
+
+  const sel = (opts, cur, on) => {
+    const s = el("select");
+    opts.forEach(([v, t]) => { const o = el("option", null, t); o.value = v; if (v === cur) o.selected = true; s.appendChild(o); });
+    s.addEventListener("change", () => { on(s.value); explorer.limit = 250; refresh(); });
+    return s;
+  };
+  const typeOpts = [["all", "All types"]].concat(
+    countBy(allModels(), (r) => r.type || "unknown").map(([k, v]) => [k, cap(k) + " (" + v + ")"]));
+  const patOpts = [["all", "All patterns"]].concat(PATTERNS.map((p) => [p.key, p.label.replace(/ \(.*\)$/, "")]));
+
+  bar.append(
+    q,
+    sel(typeOpts, explorer.type, (v) => { explorer.type = v; }),
+    sel(patOpts, explorer.pattern, (v) => { explorer.pattern = v; }),
+    sel([["all", "Any status"], ["current", "Current"], ["discontinued", "Discontinued"]], explorer.status, (v) => { explorer.status = v; }),
+  );
+  const count = el("span", "note");
+  count.style.cssText = "font-size:12px;color:var(--muted)";
+  bar.appendChild(count);
+  const grow = el("div", "grow");
+  bar.appendChild(grow);
+  const csv = el("button", "iconbtn", "Download CSV");
+  csv.addEventListener("click", downloadCsv);
+  bar.appendChild(csv);
+
+  const wrap = el("div", "tablewrap");
+  const table = el("table", "data");
+  const thead = el("thead");
+  const htr = el("tr");
+  for (const c of EXP_COLS) {
+    const th = el("th", null, c.label);
+    th.addEventListener("click", () => {
+      if (explorer.sort === c.key) explorer.dir = -explorer.dir;
+      else { explorer.sort = c.key; explorer.dir = 1; }
+      refresh();
+    });
+    htr.appendChild(th);
+  }
+  thead.appendChild(htr);
+  const tbody = el("tbody");
+  table.append(thead, tbody);
+  wrap.appendChild(table);
+
+  const more = el("div", "more");
+  box.append(bar, wrap, more);
+
+  function refresh() {
+    const rows = explorerRows();
+    count.textContent = rows.length.toLocaleString() + " of " + allModels().length.toLocaleString() + " models";
+    [...htr.children].forEach((th, i) => {
+      const c = EXP_COLS[i];
+      th.textContent = c.label;
+      if (explorer.sort === c.key) th.appendChild(el("span", "ind", explorer.dir > 0 ? " ▲" : " ▼"));
+    });
+
+    tbody.innerHTML = "";
+    const shown = rows.slice(0, explorer.limit);
+    const frag = document.createDocumentFragment();
+    for (const r of shown) {
+      const tr = el("tr");
+      tr.appendChild(el("td", null, r.brand));
+      const mt = el("td");
+      mt.appendChild(el("strong", null, r.model || r.slug));
+      if (r.subtitle) { mt.appendChild(document.createElement("br")); mt.appendChild(el("small", null, r.subtitle)).style.color = "var(--faint)"; }
+      mt.className = "wrap";
+      tr.appendChild(mt);
+      const tt = el("td");
+      const sw = el("span", "swatch");
+      sw.style.background = TYPE_CSS[r.type || "unknown"] || "var(--faint)";
+      tt.append(sw, document.createTextNode(cap(r.type || "unknown")));
+      tr.appendChild(tt);
+      tr.appendChild(el("td", "wrap", showPatterns(r.patterns)));
+      tr.appendChild(el("td", null, r.form || "—"));
+      tr.appendChild(el("td", "num", r.msrp != null ? money(r.msrp) : "—"));
+      tr.appendChild(el("td", "num", r.year || "—"));
+      tr.appendChild(el("td", null, cap(r.avail) || "—"));
+      tr.addEventListener("click", () => go(r.brandSlug, r.slug));
+      frag.appendChild(tr);
+    }
+    tbody.appendChild(frag);
+
+    more.innerHTML = "";
+    if (rows.length > shown.length) {
+      const btn = el("button", "iconbtn", "Show " + Math.min(250, rows.length - shown.length) + " more (" +
+        shown.length.toLocaleString() + " of " + rows.length.toLocaleString() + " shown)");
+      btn.addEventListener("click", () => { explorer.limit += 250; refresh(); });
+      more.appendChild(btn);
+    }
+  }
+
+  function downloadCsv() {
+    const rows = explorerRows();
+    const cell = (v) => {
+      const s = Array.isArray(v) ? v.join("; ") : (v == null ? "" : String(v));
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const lines = [EXP_COLS.map((c) => c.label).concat(["Subtitle", "Tube", "Multipattern", "Stereo", "URL"]).join(",")];
+    for (const r of rows) {
+      lines.push([
+        cell(r.brand), cell(r.model), cell(r.type), cell((r.patterns || []).map((p) => PATTERN_DISPLAY[p] || p)), cell(r.form),
+        cell(r.msrp), cell(r.year), cell(r.avail), cell(r.subtitle),
+        r.tube ? "yes" : "no", r.multi ? "yes" : "no", r.stereo ? "yes" : "no",
+        cell(location.origin + location.pathname + "#/" + encodeURIComponent(r.brandSlug) + "/" + encodeURIComponent(r.slug)),
+      ].join(","));
+    }
+    const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = el("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "microphones-" + rows.length + ".csv";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+
+  refresh();
+  return box;
+}
+
 /* ----------------------------------------------------------------- routing */
 function go(brand, model) {
   location.hash = brand
@@ -1285,15 +1818,49 @@ function go(brand, model) {
     : "#/";
 }
 
+let statsBuilt = false;
+
+function showView(name) {
+  const stats = name === "stats";
+  document.querySelector("main").hidden = stats;
+  $("stats").hidden = !stats;
+  // Search and the pattern buttons drive the browse panes only; the explorer
+  // carries its own filters.
+  $("search").hidden = stats;
+  $("patbar").hidden = stats;
+  $("navBrowse").classList.toggle("on", !stats);
+  $("navStats").classList.toggle("on", stats);
+  if (stats && !statsBuilt) { renderStats(); statsBuilt = true; }
+}
+
+/* Point the middle pane at one brand, or at the whole catalogue when null. */
+function openScope(slug) {
+  state.scope = slug;
+  state.limit = PAGE;
+  if (slug) go(slug);
+  renderTree();
+  renderModels();
+}
+
 function route() {
   const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean).map(decodeURIComponent);
+
+  if (parts[0] === "stats") { showView("stats"); return; }
+  showView("browse");
+
   const [brand, model] = parts;
   const next = state.byBrand.has(brand) ? brand : null;
   const brandChanged = next !== state.brand;
   state.brand = next;
   state.model = state.brand && model ? model : null;
 
-  if (brandChanged) state.limit = PAGE;
+  /* A single-brand scope follows the hash; the all-brands sweep stays put, so
+     clicking a result doesn't throw away the list you just filtered down to. */
+  if (brandChanged && state.scope !== null) {
+    state.scope = state.brand;
+    state.limit = PAGE;
+    renderTree();
+  }
   syncChips();
   renderModels();
   syncTreeSelection();
@@ -1345,8 +1912,7 @@ $("patbar").addEventListener("click", (e) => {
 function applyFilters() {
   state.limit = PAGE;
   syncChips();
-  renderTree();
-  syncTreeSelection();
+  renderTree();   /* already re-applies the tree's selection classes */
   renderModels();
 }
 
