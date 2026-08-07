@@ -1008,6 +1008,7 @@
       "description": "Interface connectors that imply the device converts on board, and therefore instantiates the ADC block.",
       "match": ["USB", "Apple Lightning", "Apple 30-pin", "Apple Headset TRRS", "AES3", "AES67", "Dante"]
     },
+    "control_note": "Nothing in this catalogue publishes an AES70 device model. A mapped parameter means the catalogue knows the value, not that the microphone exposes the object.",
     "statuses": [
       { "key": "mapped", "label": "Mapped", "description": "The catalogue supplies a value for this profile parameter." },
       { "key": "absent", "label": "Absent", "description": "The catalogue positively records that the device does not have this function — the equivalent of the profile's own 'N' type code." },

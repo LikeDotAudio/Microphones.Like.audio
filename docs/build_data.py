@@ -22,6 +22,7 @@ from collections import Counter, defaultdict
 import build_rf as rf
 import build_x230 as x230
 import vocabulary as V
+import x230_read
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -136,6 +137,22 @@ def build_config(mics, rf_records, warn):
             entry["count"] = len(mics)
         bands.append(entry)
 
+    # X230 score bands, counted across both record kinds — a wireless system is
+    # read against the profile too, just against its radio half.
+    scores = [(r.get("x230") or {}).get("p") for r in mics + rf_records]
+    x230_bands = []
+    for band in V.X230_BANDS:
+        entry = dict(band)
+        if band.get("none"):
+            entry["count"] = sum(1 for s in scores if s is None)
+        elif "min" in band:
+            hi = band.get("max")
+            entry["count"] = sum(1 for s in scores
+                                 if s is not None and s >= band["min"] and (hi is None or s < hi))
+        else:
+            entry["count"] = len(scores)
+        x230_bands.append(entry)
+
     type_entries = []
     total = len(mics) + len(rf_records)
     for t in V.TYPES:
@@ -208,6 +225,7 @@ def build_config(mics, rf_records, warn):
         "priceBands": bands,
         "availability": [dict(a, count=len(mics) if a["key"] == "all" else avail.get(a["key"], 0))
                          for a in V.AVAILABILITY],
+        "x230Bands": x230_bands,
         "sorts": V.SORTS,
         "tagSorts": V.TAG_SORTS,
         "patterns": patterns,
@@ -245,6 +263,19 @@ def main():
     rf_records = rf.load(warnings.append)
     rf_by_brand = rf.by_brand(rf_records)
 
+    # Read every record against AES-X230 before anything is written: the score
+    # is a facet the model list filters and sorts on, so it has to exist on the
+    # index row, and the detail panel then renders the same report rather than
+    # deriving a second one in the browser. The compact report rides along on
+    # the shipped copy of each record — it is a derived view of that record, not
+    # part of the source dataset Research/microphone.schema.json describes.
+    profile = x230.load(warnings.append)
+    wordbook = x230_read.Wordbook()
+    if profile:
+        reader = x230_read.Reader(profile)
+        for rec in mics + rf_records:
+            rec["x230"] = x230_read.compact(reader.read(rec), wordbook)
+
     by_brand = defaultdict(list)
     for mic in mics:
         by_brand[mic["source"]["brand_slug"]].append(mic)
@@ -276,6 +307,9 @@ def main():
 
         name = (group[0]["identity"].get("manufacturer") if group
                 else rf_group[0]["identity"]["manufacturer"])
+        rows = [model_row(m) for m in group] + [rf.model_row(r) for r in rf_group]
+        for row, rec in zip(rows, group + rf_group):
+            row["x230"] = (rec.get("x230") or {}).get("p")
         brands.append({
             "slug": slug,
             "file": file_slug,
@@ -285,7 +319,7 @@ def main():
             "mics": len(group),
             "rf": len(rf_group),
             "types": dict(types),
-            "models": [model_row(m) for m in group] + [rf.model_row(r) for r in rf_group],
+            "models": rows,
         })
 
     brands.sort(key=lambda b: b["name"].lower())
@@ -323,18 +357,23 @@ def main():
 
     # The Wireless tab lists every RF system at once, so it gets one file rather
     # than reaching into 16 brand files. Small enough to fetch on demand.
+    # The X230 reading is dropped here: the tab lists coverage bars, and a system
+    # opened from it loads the brand file, which carries the report. Leaving it in
+    # would near-double a file every visit to the tab fetches.
     rf_path = os.path.join(OUT, "rf.json")
     with open(rf_path, "w", encoding="utf-8") as fh:
         json.dump({
             "source": os.path.basename(rf.SRC),
             "total_systems": len(rf_records),
             "total_ranges": sum(r["rf"]["range_count"] for r in rf_records),
-            "systems": rf_records,
+            "systems": [{k: v for k, v in r.items() if k != "x230"} for r in rf_records],
         }, fh, ensure_ascii=False, separators=(",", ":"))
 
     # The AES-X230 profile: shipped whole, because both the X230 tab and the
     # per-device conformance panel read it rather than carrying their own copy.
-    profile = x230.write(OUT, warnings.append)
+    # It goes out last, carrying the wordbook the reports above index into.
+    if profile:
+        x230.write(OUT, profile, wordbook)
 
     config = build_config(mics, rf_records, warnings.append)
     config_path = os.path.join(OUT, "config.json")

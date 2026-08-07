@@ -39,6 +39,14 @@ export function renderControls() {
   row2.appendChild(price);
   fillSelect(price, usable(c.priceBands), { showCounts: true });
 
+  /* Not id="x230" — that belongs to the X230 tab's <section>, and a duplicate
+     id would hand showView() this control to hide instead. */
+  const x230 = el("select");
+  x230.id = "x230Band";
+  x230.title = "AES-X230 score — how much of the profile this catalogue can fill in";
+  row2.appendChild(x230);
+  fillSelect(x230, usable(c.x230Bands), { showCounts: true });
+
   for (const t of usable(c.traits)) {
     row2.appendChild(chip("trait", t.key, t.label, t.count));
   }

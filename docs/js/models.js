@@ -35,6 +35,15 @@ export function modelCard(m, brand, showBrand) {
   if (m.stereo) meta.appendChild(el("span", "tag", "Stereo"));
   if (m.set) meta.appendChild(el("span", "tag", "Set"));
   if (m.year) meta.appendChild(el("span", "tag", String(m.year)));
+  /* How much of the AES-X230 profile this record can fill in. Banded by tenths
+     so the colour reads as "how well documented" without needing a legend. */
+  if (m.x230 != null) {
+    const chip = el("span", "tag x230pct q" + Math.min(9, Math.floor(m.x230 / 10)),
+      "X230 " + m.x230 + "%");
+    chip.title = "AES-X230: the catalogue fills in " + m.x230 +
+      "% of the profile parameters that apply to this device";
+    meta.appendChild(chip);
+  }
   info.appendChild(meta);
 
   card.append(thumb, info);

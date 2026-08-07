@@ -70,6 +70,24 @@ SORTS = [
     {"key": "price", "label": "Price ↑"},
     {"key": "price-desc", "label": "Price ↓"},
     {"key": "year", "label": "Newest"},
+    {"key": "x230-desc", "label": "X230 score ↓"},
+    {"key": "x230", "label": "X230 score ↑"},
+]
+
+# Bands of the AES-X230 score: what percentage of the profile parameters that
+# apply to a device the catalogue can actually fill in. See docs/x230_read.py.
+# The score is a measure of this dataset against the profile, not of the
+# microphone against the standard — no record here publishes an AES70 device
+# model, so a high score means the catalogue is well documented, not that the
+# microphone is compliant. [min, max) in percent.
+X230_BANDS = [
+    {"key": "any", "label": "Any X230 score"},
+    {"key": "0-20", "label": "Under 20%", "min": 0, "max": 20},
+    {"key": "20-40", "label": "20 – 39%", "min": 20, "max": 40},
+    {"key": "40-60", "label": "40 – 59%", "min": 40, "max": 60},
+    {"key": "60-80", "label": "60 – 79%", "min": 60, "max": 80},
+    {"key": "80-", "label": "80% and up", "min": 80},
+    {"key": "none", "label": "No score", "none": True},
 ]
 
 TAG_SORTS = [

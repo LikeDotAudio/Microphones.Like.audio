@@ -1,24 +1,25 @@
-/* Reading a catalogue record as an AES-X230 profile instance.
+/* The AES-X230 panel on a device page.
  *
- * X230 describes a microphone as a set of AES70 control objects. This catalogue
- * describes microphones as specification sheets. The two are not the same kind
- * of thing, and the whole value of this view is in saying so precisely: for
- * every parameter the profile defines, either the catalogue can populate it, or
- * it positively records the function missing, or it cannot answer — and that
- * last case is a null, printed as one.
+ * The reading itself is not done here. docs/x230_read.py reads every record
+ * against the profile at build time, because the score it produces is a facet —
+ * the model list filters and sorts on it, so it has to be on the index row
+ * before the first card is drawn. Doing it a second time in the browser would
+ * be two implementations of one judgement, free to disagree with each other.
  *
- * The profile, its enumerations and the crosswalk from catalogue vocabulary all
- * live in data/x230.json (built from Research/aes_x230_profile.json). What lives
- * here is the reading: block instantiation, then one extractor per parameter.
- * The report this produces is described by Research/aes_x230_device.schema.json.
+ * So each record ships a compact report under `x230`, and this module expands
+ * it back out against data/x230.json and draws it. The compact form drops
+ * everything the profile already says (parameter names, classes, roles,
+ * properties) and interns the strings every record repeats into a wordbook:
  *
- * A word on what "mapped" does not mean. No record in this catalogue publishes
- * an AES70 device model, so a mapped parameter says the catalogue knows the
- * value, not that the device exposes the object. `access` carries that
- * distinction: a pad the source marks "(Via Switch)" is a function you can put
- * your thumb on, not a control point a network can reach. */
+ *   p  mapped percentage
+ *   c  [total, mapped, absent, unknown, not-applicable, open-in-draft, applicable]
+ *   b  per profile block, [status initial, why index]
+ *   r  rows that carry something, [key, status code, values, access, why, evidence]
+ *   n  the not-applicable majority, grouped [why index, [keys]]
+ *
+ * See x230_read.py compact() for the other half of this contract. */
 
-import { el, num } from "./dom.js";
+import { el } from "./dom.js";
 
 /* ------------------------------------------------------------------ loading */
 
@@ -38,287 +39,31 @@ export function ensureX230() {
 /* Only valid once ensureX230() has resolved. */
 export const x230 = () => profile;
 
-/* ----------------------------------------------------------------- helpers */
+/* ---------------------------------------------------------------- expanding */
 
-const clean = (v) => (v == null || v === "" || v === "n/a" ? null : String(v));
-const mhz = (v) => (v == null ? "—" : num(v));
+const STATUS = { m: "mapped", a: "absent", u: "unknown", o: "undefined-in-profile" };
+const BLOCK_STATUS = { i: "instantiated", n: "not-instantiated", u: "unknown" };
 
-const crosswalk = () => (profile && profile.crosswalk) || {};
+export function expand(rec) {
+  const packed = rec.x230;
+  if (!packed) return null;
+  const words = profile.wordbook || [];
+  const word = (i) => (i == null || i < 0 ? null : words[i]);
 
-function patternCross(name) {
-  return (crosswalk().pattern_positions || []).find((p) => p.corpus === name) || null;
-}
+  const order = new Map(profile.parameters.map((p, i) => [p.key, i]));
+  const spec = new Map(profile.parameters.map((p) => [p.key, p]));
 
-/* The connector is the only thing in the record that says a microphone converts
-   on board — and therefore that it has an ADC block to describe at all. */
-function digitalConnector(rec) {
-  const want = ((crosswalk().digital_connectors || {}).match || []).map((s) => s.toLowerCase());
-  for (const iface of (rec.specifications || {}).interfaces || []) {
-    const c = (iface.connector || "").toLowerCase();
-    if (want.some((w) => c.includes(w))) return iface.connector;
-  }
-  return null;
-}
-
-/* Distinct pattern names, preferring the normalised form. */
-function patternNames(rec) {
-  const out = [];
-  for (const p of (rec.specifications || {}).pickup_patterns || []) {
-    const name = p.pattern_base || p.pattern;
-    if (name && name !== "None" && !out.includes(name)) out.push(name);
-  }
-  return out;
-}
-
-/* Pads and filters share a shape, and the same three-way answer: the column is
-   missing (unknown), the column is there and empty (absent), or there are rows. */
-function switchedList(rec, field, label, format) {
-  const spec = rec.specifications || {};
-  if (!(field in spec)) {
-    return { status: "unknown", why: "This page carries no pads-and-filters column." };
-  }
-  const rows = spec[field] || [];
-  if (!rows.length) {
+  const shell = (key) => {
+    const p = spec.get(key) || {};
+    const oca = p.oca || {};
     return {
-      status: "absent",
-      why: "The pads-and-filters column is present and lists no " + label + ".",
-      evidence: [["specifications." + field, "[]"]],
-    };
-  }
-  const local = rows.some((r) => /switch/i.test(r.mechanism || r.raw || ""));
-  return {
-    values: rows.map(format),
-    access: local ? "local" : null,
-    why: local
-      ? "The source marks this “Via Switch”: a function on the microphone, not an object a controller can reach."
-      : null,
-    evidence: rows.map((r) => ["specifications." + field + "[].raw", r.raw]),
-  };
-}
-
-/* ------------------------------------------------------- block instantiation
-   Decided once per device. Every parameter inside a block that is not
-   instantiated is not-applicable, so the reasoning is stated once instead of
-   thirty times down the table. */
-
-function blockStates(rec, kind) {
-  const out = {};
-  const set = (keys, status, why) => keys.forEach((k) => { out[k] = { status, why }; });
-  const RF_BLOCKS = ["transmitter", "receiver", "analyzer", "manager", "xmit_antenna", "rcv_antenna"];
-
-  if (kind === "rf") {
-    set(["preamp", "processor", "adc", "utility"], "unknown",
-      "The wireless dataset covers tuning and coordination. The audio chain inside the system is not described either way.");
-    set(["device"], "instantiated", "Manufacturer and model name the device.");
-    set(["transmitter", "receiver"], "instantiated",
-      "A wireless system is a transmitter and a receiver; the tuning ranges belong to both.");
-    set(["analyzer", "manager"], "not-instantiated",
-      "The dataset describes a system, not the coordination hardware around it.");
-    set(["xmit_antenna", "rcv_antenna"], "unknown",
-      "Antennas are not itemised in the dataset, and the profile marks them optional anyway.");
-    return out;
-  }
-
-  const conn = digitalConnector(rec);
-  set(["preamp"], "instantiated",
-    "Every microphone has an analog front end: pattern, pad, low-cut and rated sensitivity all sit here.");
-  set(["device"], "instantiated", "Manufacturer and model name the device.");
-
-  if (conn) {
-    set(["adc"], "instantiated", "Converts on board — the interface is " + conn + ".");
-    set(["processor", "utility"], "unknown",
-      "A microphone that converts on board may process and may carry utility objects; the catalogue does not say.");
-  } else {
-    const iface = ((rec.specifications || {}).interfaces || [])[0];
-    set(["adc"], "not-instantiated",
-      "Analog output only" + (iface && iface.connector ? " — " + iface.connector + "." : "."));
-    set(["processor", "utility"], "not-instantiated",
-      "An analog microphone with no converter has nothing downstream to process and no utility objects to expose.");
-  }
-  set(RF_BLOCKS, "not-instantiated", "A wired microphone carries no radio blocks.");
-  return out;
-}
-
-/* ------------------------------------------------------------- extractors
-   Each returns the fields of one report row, or {status, why} to override.
-   Returning nothing at all leaves the parameter unknown with a generic reason —
-   which is the correct answer far more often than not. */
-
-/* Device-level identity is the one part of the profile both record kinds can
-   answer, so it lives outside the microphone/radio split. */
-const COMMON = {
-  manufacturer: (rec) => ({
-    value: rec.identity.manufacturer,
-    access: "read-only",
-    evidence: [["identity.manufacturer", rec.identity.manufacturer]],
-  }),
-
-  serial_number: () => ({
-    status: "unknown",
-    why: "A per-unit value. This catalogue describes models, so there is nothing that could fill it.",
-  }),
-
-  user_label: () => ({
-    status: "unknown",
-    why: "Set by whoever installs the device. Not a catalogue fact at all.",
-  }),
-
-  type: (rec) => ({
-    value: rec.classification.subtitle || null,
-    evidence: [["classification.subtitle", rec.classification.subtitle || "—"]],
-    why: "X230 never settled what Type means — its class cell reads “?”. The nearest thing the " +
-      "catalogue has is the record's own descriptor, shown here for comparison.",
-  }),
-};
-
-const MIC = {
-  pad: (rec) => switchedList(rec, "pads", "pad",
-    (p) => (p.value_db != null ? num(p.value_db, " dB") : p.raw)),
-
-  low_cut: (rec) => switchedList(rec, "filters", "filter",
-    (f) => [f.frequency_hz != null ? num(f.frequency_hz, " Hz") : null, f.slope]
-      .filter(Boolean).join(", ") || f.raw),
-
-  polar_pattern(rec) {
-    const names = patternNames(rec);
-    if (!names.length) return { status: "unknown", why: "This page lists no pickup pattern." };
-    const multi = !!rec.classification.is_multipattern;
-    const rows = names.map((n) => {
-      const x = patternCross(n);
-      return x && x.position != null
-        ? "Position " + x.position + " · " + x.position_name
-        : n + " — no profile position";
-    });
-    const unplaced = names.filter((n) => { const x = patternCross(n); return !x || x.position == null; });
-    return {
-      values: rows,
-      access: multi ? "local" : "read-only",
-      evidence: names.map((n) => ["specifications.pickup_patterns[].pattern_base", n]),
-      why: unplaced.length
-        ? "X230 leaves stereo unassigned, so " + unplaced.join(" and ") + " has no PatternType position."
-        : (multi
-          ? "Selected by a switch on the microphone, so the positions are real but the control point is not."
-          : "A fixed pattern: reported rather than selected."),
-    };
-  },
-
-  /* The profile publishes a gradient coefficient for exactly three patterns.
-     Deriving the other seven would be inventing numbers the standard withheld. */
-  pattern_parameter(rec) {
-    const placed = patternNames(rec).map(patternCross).filter((x) => x && x.gradient != null);
-    if (!placed.length) {
-      return {
-        status: "unknown",
-        why: "The profile gives a coefficient only for omni (0), cardioid (0.5) and figure-8 (1). " +
-          "None of this microphone's patterns is one of them.",
-      };
-    }
-    return {
-      values: placed.map((x) => x.position_name + " → [1, " + x.gradient + "]"),
-      access: "read-only",
-      evidence: placed.map((x) => ["specifications.pickup_patterns[].pattern_base", x.corpus]),
-      why: "Derived from the pattern rather than published: Value[1] is the order, Value[2] the first-order coefficient.",
-    };
-  },
-
-  sensitivity(rec) {
-    const rows = ((rec.specifications || {}).pickup_patterns || [])
-      .filter((p) => p.sensitivity_mv_pa != null);
-    if (!rows.length) return { status: "unknown", why: "No sensitivity figure is published for this microphone." };
-    return {
-      values: rows.map((p) => (rows.length > 1 ? (p.pattern_base || p.pattern) + ": " : "") +
-        num(p.sensitivity_mv_pa, " mV/Pa")),
-      access: "read-only",
-      evidence: rows.map((p) => ["specifications.pickup_patterns[].sensitivity_mv_pa",
-        num(p.sensitivity_mv_pa, " mV/Pa")]),
-      why: "Rated sensitivity — which the profile notes is quoted relative to 0 dB gain.",
-    };
-  },
-
-  gain: () => ({
-    status: "unknown",
-    why: "The catalogue describes the microphone, not a gain stage in it. The profile is specific here: " +
-      "0 dB must be inside the range, because rated sensitivity is quoted against it.",
-  }),
-
-  polarity: () => ({ status: "unknown", why: "Polarity inversion is not a field the catalogue carries." }),
-  mute: () => ({ status: "unknown", why: "Mute is not a field the catalogue carries." }),
-
-  sample_rate: () => ({ status: "unknown", why: "The converter's sample rate is not published on these pages." }),
-  resolution: () => ({ status: "unknown", why: "Word length is not published on these pages." }),
-  latency: () => ({ status: "unknown", why: "Conversion latency is not published on these pages." }),
-
-};
-
-const RF = {
-  rf_frequency(rec) {
-    const c = rec.rf.coverage;
-    if (c.start_mhz == null || c.end_mhz == null) {
-      return { status: "unknown", why: "No usable coverage figures in the dataset." };
-    }
-    return {
-      value: mhz(c.start_mhz) + " – " + mhz(c.end_mhz) + " MHz" +
-        (c.tunable_mhz != null ? " · " + mhz(c.tunable_mhz) + " MHz tunable" : ""),
-      access: "local",
-      evidence: [
-        ["rf.coverage.start_mhz", mhz(c.start_mhz) + " MHz"],
-        ["rf.coverage.end_mhz", mhz(c.end_mhz) + " MHz"],
-        ["rf.coverage.tunable_mhz", c.tunable_mhz == null ? "—" : mhz(c.tunable_mhz) + " MHz"],
-      ],
-      why: "What the system can tune to. How it is tuned is not in the dataset.",
-    };
-  },
-
-  /* The profile models band select as a switch whose position names are the band
-     names, which is exactly the shape of this dataset's tuning ranges. */
-  rf_band(rec) {
-    const ranges = rec.rf.ranges || [];
-    if (!ranges.length) return { status: "unknown", why: "The system lists no tuning ranges." };
-    return {
-      values: ranges.map((r, i) => "Position " + i + " · " + r.name +
-        " (" + mhz(r.start_mhz) + "–" + mhz(r.end_mhz) + " MHz)"),
-      access: "local",
-      evidence: ranges.map((r) => ["rf.ranges[].name", r.name]),
-      why: "The profile's OcaSwitch position names are band names, so the tuning ranges drop straight in.",
-    };
-  },
-
-  rf_device_name: (rec) => ({
-    value: rec.identity.full_name,
-    access: "read-only",
-    evidence: [["identity.full_name", rec.identity.full_name]],
-    why: "The profile fixes the class as OcaDeviceManager but leaves the property “tbd”.",
-  }),
-
-  rf_device_id: () => ({ status: "unknown", why: "The dataset carries no device identifier." }),
-
-  rf_status: () => ({ status: "unknown", why: "A runtime reading. Nothing static could supply it." }),
-  rf_swr: () => ({ status: "unknown", why: "A runtime measurement. Nothing static could supply it." }),
-  rf_mute: () => ({ status: "unknown", why: "A control state, not a published specification." }),
-  rf_power: () => ({ status: "unknown", why: "Output power levels are not in this dataset." }),
-  rf_transmission_mode: () => ({ status: "unknown", why: "Transmission modes are not in this dataset." }),
-  rf_booster_gain: () => ({ status: "unknown", why: "External boosters are not part of the system record." }),
-};
-
-/* ----------------------------------------------------------------- reading */
-
-const rfBlocksOf = (param) => Object.keys(param.applicability || {});
-
-export function readDevice(rec) {
-  const kind = rec.classification && rec.classification.kind === "rf" ? "rf" : "microphone";
-  const blocks = blockStates(rec, kind);
-  const table = Object.assign({}, COMMON, kind === "rf" ? RF : MIC);
-  const rows = [];
-
-  for (const p of profile.parameters) {
-    const row = {
-      key: p.key,
-      profile_name: p.profile_name,
+      key,
+      profile_name: p.profile_name || key,
       section: p.section,
       block: p.block || null,
-      oca_class: p.oca.class,
-      role_name: p.oca.role_name,
-      property: p.oca.property || [],
+      oca_class: oca.class || null,
+      role_name: oca.role_name || null,
+      property: oca.property || [],
       unit: p.unit || null,
       status: "unknown",
       value: null,
@@ -327,64 +72,34 @@ export function readDevice(rec) {
       evidence: [],
       why: null,
     };
+  };
 
-    /* Which blocks could carry this parameter, and what the device did with
-       them. The audio half names one block; the RF half names a grid. */
-    const owners = p.section === "rf" ? rfBlocksOf(p) : (p.block ? [p.block] : []);
-    const states = owners.map((k) => blocks[k]).filter(Boolean);
-    const live = states.filter((s) => s.status !== "not-instantiated");
-
-    if (!p.oca.resolved) {
-      row.status = "undefined-in-profile";
-      row.why = p.notes || "The draft names this parameter but binds it to nothing.";
-    } else if (owners.length && !live.length) {
-      row.status = "not-applicable";
-      row.why = states[0].why;
-    }
-
-    const fn = table[p.key];
-    const got = (fn && fn(rec)) || null;
-
-    if (got) {
-      if (row.status === "undefined-in-profile") {
-        /* The binding is open, but showing what the catalogue *would* have said
-           is more useful than an empty cell — as long as the status still says
-           there is nothing to conform to. */
-        if (got.value != null) row.value = got.value;
-        if (got.values) row.values = got.values;
-        row.evidence = got.evidence || [];
-        row.why = got.why || row.why;
-      } else if (row.status !== "not-applicable") {
-        row.status = got.status || "mapped";
-        row.value = got.value != null ? got.value : null;
-        row.values = got.values || [];
-        row.access = got.access || null;
-        row.evidence = got.evidence || [];
-        row.why = got.why || null;
-      }
-    } else if (row.status === "unknown" && !row.why) {
-      const unclear = states.find((s) => s.status === "unknown");
-      row.why = unclear ? unclear.why : "No field in the catalogue record carries this parameter.";
-    }
-
-    if (row.status === "mapped" && !row.values.length && row.value == null) {
-      row.status = "unknown";
-      row.why = row.why || "The extractor found nothing to report.";
-    }
+  const rows = [];
+  for (const [key, code, values, access, why, evidence] of packed.r) {
+    const row = shell(key);
+    row.status = STATUS[code] || "unknown";
+    row.values = values || [];
+    row.access = word(access);
+    row.why = word(why);
+    row.evidence = (evidence || []).map(([path, value]) => ({ path: word(path), value }));
     rows.push(row);
   }
+  for (const [why, keys] of packed.n || []) {
+    for (const key of keys) {
+      const row = shell(key);
+      row.status = "not-applicable";
+      row.why = word(why);
+      rows.push(row);
+    }
+  }
+  rows.sort((a, b) => (order.get(a.key) ?? 0) - (order.get(b.key) ?? 0));
 
-  const count = (s) => rows.filter((r) => r.status === s).length;
-  const na = count("not-applicable");
-  const open = count("undefined-in-profile");
-  const applicable = rows.length - na - open;
-  const mapped = count("mapped");
-
+  const [total, mapped, absent, unknown, na, open, applicable] = packed.c;
   return {
     profile_id: profile.profile.id,
     profile_revision: profile.profile.revision || null,
     subject: {
-      kind,
+      kind: rec.classification && rec.classification.kind === "rf" ? "rf" : "microphone",
       brand_slug: rec.source.brand_slug || null,
       model_slug: rec.source.model_slug || null,
       full_name: rec.identity.full_name,
@@ -392,26 +107,20 @@ export function readDevice(rec) {
     control: {
       aes70_declared: false,
       remote_control_points: rows.filter((r) => r.access === "aes70").length,
-      note: "Nothing in this catalogue publishes an AES70 device model. A mapped parameter means the " +
-        "catalogue knows the value, not that the microphone exposes the object.",
+      note: (profile.crosswalk || {}).control_note || "",
     },
     coverage: {
-      total: rows.length,
-      mapped,
-      absent: count("absent"),
-      unknown: count("unknown"),
+      total, mapped, absent, unknown,
       not_applicable: na,
       undefined_in_profile: open,
       applicable,
-      mapped_pct: applicable ? Math.round((mapped / applicable) * 100) : null,
+      mapped_pct: packed.p,
     },
-    blocks: profile.blocks.map((b) => ({
-      key: b.key,
-      name: b.name,
-      domain: b.domain,
-      status: (blocks[b.key] || {}).status || "unknown",
-      why: (blocks[b.key] || {}).why || "",
-    })),
+    blocks: profile.blocks.map((b, i) => {
+      const [code, why] = (packed.b || [])[i] || ["u", -1];
+      return { key: b.key, name: b.name, domain: b.domain,
+        status: BLOCK_STATUS[code] || "unknown", why: word(why) || "" };
+    }),
     parameters: rows,
   };
 }
@@ -451,7 +160,7 @@ function paramRow(p) {
   if (p.access) row.appendChild(el("div", "x230acc", ACCESS_LABEL[p.access] || p.access));
   if (p.why) row.appendChild(el("div", "x230why", p.why));
   if (p.evidence.length) {
-    row.title = p.evidence.map((e) => e[0] + " = " + e[1]).join("\n");
+    row.title = p.evidence.map((e) => e.path + " = " + e.value).join("\n");
   }
   return row;
 }
@@ -483,8 +192,11 @@ export function x230Section(rec) {
 
   ensureX230()
     .then(() => {
+      const rep = expand(rec);
       body.innerHTML = "";
-      body.appendChild(buildReport(readDevice(rec)));
+      body.appendChild(rep
+        ? buildReport(rep)
+        : el("div", "sub", "This record carries no X230 reading — rebuild with docs/build_data.py."));
     })
     .catch((err) => {
       body.innerHTML = "";
@@ -498,11 +210,14 @@ function buildReport(rep) {
   const wrap = el("div", "x230rep");
   const cov = rep.coverage;
 
+  const score = el("div", "x230score");
+  score.appendChild(el("b", null, cov.mapped_pct == null ? "—" : cov.mapped_pct + "%"));
+  score.appendChild(el("span", null, cov.mapped + " of " + cov.applicable + " applicable parameters"));
+  wrap.appendChild(score);
+
   wrap.appendChild(meter(cov));
   wrap.appendChild(el("div", "x230sum",
-    cov.mapped + " of " + cov.applicable + " applicable parameters mapped" +
-    (cov.mapped_pct != null ? " (" + cov.mapped_pct + "%)" : "") +
-    " · " + cov.unknown + " null · " + cov.absent + " not implemented · " +
+    cov.unknown + " null · " + cov.absent + " not implemented · " +
     cov.not_applicable + " out of scope · " + cov.undefined_in_profile + " open in the draft"));
   wrap.appendChild(el("div", "x230note", rep.control.note));
 

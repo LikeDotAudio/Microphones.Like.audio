@@ -31,17 +31,29 @@ export function pricePass(m) {
   return m.msrp >= band.min && (band.max == null || m.msrp < band.max);
 }
 
+/* How much of the X230 profile the catalogue can fill in for this record —
+   computed at build time by docs/x230_read.py and carried on the index row. */
+export function x230Pass(m) {
+  if (state.x230 === "any") return true;
+  const band = (cfg().x230Bands || []).find((b) => b.key === state.x230);
+  if (!band) return true;
+  if (band.none) return m.x230 == null;
+  if (m.x230 == null) return false;
+  return m.x230 >= band.min && (band.max == null || m.x230 < band.max);
+}
+
 /* Everything the facet controls ask of a model, AND-ed together. */
 export function facetPass(m, brand) {
   if (state.type !== "all" && (m.type || "unknown") !== state.type) return false;
   if (state.form !== "all" && m.form !== state.form) return false;
   if (state.currentOnly && m.avail !== "current") return false;
   for (const t of state.traits) if (!m[t]) return false;
-  return pricePass(m) && tagPass(m, brand);
+  return pricePass(m) && x230Pass(m) && tagPass(m, brand);
 }
 
 export function filtersActive() {
   return state.type !== "all" || state.form !== "all" || state.price !== "any" ||
+    state.x230 !== "any" ||
     state.traits.size > 0 || state.currentOnly || state.patterns.size > 0 || !!state.tag;
 }
 
@@ -49,6 +61,7 @@ export function clearFilters() {
   state.type = "all";
   state.form = "all";
   state.price = "any";
+  state.x230 = "any";
   state.traits.clear();
   state.currentOnly = false;
   state.patterns.clear();
@@ -89,6 +102,8 @@ export function visibleModels(brand) {
     price: (x, y) => (x.m.msrp ?? Infinity) - (y.m.msrp ?? Infinity) || byName(x, y),
     "price-desc": (x, y) => (y.m.msrp ?? -1) - (x.m.msrp ?? -1) || byName(x, y),
     year: (x, y) => (y.m.year ?? -1) - (x.m.year ?? -1) || byName(x, y),
+    x230: (x, y) => (x.m.x230 ?? Infinity) - (y.m.x230 ?? Infinity) || byName(x, y),
+    "x230-desc": (x, y) => (y.m.x230 ?? -1) - (x.m.x230 ?? -1) || byName(x, y),
   };
   return rows.sort(sorters[state.sort] || byName);
 }

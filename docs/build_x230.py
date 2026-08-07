@@ -98,21 +98,23 @@ def load(warn):
     return profile
 
 
-def write(out_dir, warn):
-    """Emit data/x230.json. Returns the profile, or None if there was none."""
-    profile = load(warn)
-    if profile is None:
-        return None
+def write(out_dir, profile, wordbook=None):
+    """Emit data/x230.json: the profile, plus the wordbook the per-record reports
+    index into. The two ship together because the browser needs both to expand a
+    report, and one fetch is cheaper than two."""
+    payload = dict(profile)
+    payload["wordbook"] = list(wordbook.words) if wordbook else []
     path = os.path.join(out_dir, "x230.json")
     with open(path, "w", encoding="utf-8") as fh:
-        json.dump(profile, fh, ensure_ascii=False, separators=(",", ":"))
+        json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
     return profile
 
 
 if __name__ == "__main__":
     warnings = []
-    got = write(os.path.join(HERE, "data"), warnings.append)
+    got = load(warnings.append)
     if got:
+        write(os.path.join(HERE, "data"), got)
         print("x230.json   %d parameters / %d blocks / %d diagrams"
               % (len(got["parameters"]), len(got["blocks"]), len(got["diagrams"])))
     for w in warnings:

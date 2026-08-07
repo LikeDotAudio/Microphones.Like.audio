@@ -201,6 +201,10 @@
       "required": ["description"],
       "properties": {
         "description": { "type": "string" },
+        "control_note": {
+          "type": "string",
+          "description": "The caveat every device report carries: a mapped parameter means the catalogue knows the value, not that the device exposes the object. Held here so the reader and the page say the same thing."
+        },
         "pattern_positions": {
           "type": "array",
           "description": "Catalogue pattern name to profile PatternType position. `gradient` is the first-order coefficient the profile publishes for that pattern, and is null where the profile gives none.",

@@ -24,6 +24,7 @@ export const state = {
   type: "all",
   form: "all",
   price: "any",
+  x230: "any",             // AES-X230 score band
   traits: new Set(),       // tube / multi / stereo, AND-ed together
   currentOnly: false,
   sort: "name",

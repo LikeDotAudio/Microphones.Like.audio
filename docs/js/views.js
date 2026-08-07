@@ -100,6 +100,8 @@ export function syncChips() {
   $("form").classList.toggle("on", state.form !== "all");
   $("price").value = state.price;
   $("price").classList.toggle("on", state.price !== "any");
+  $("x230Band").value = state.x230;
+  $("x230Band").classList.toggle("on", state.x230 !== "any");
   const tagChip = $("tagChip");
   tagChip.hidden = !state.tag;
   if (state.tag) tagChip.textContent = "tag: " + state.tag + "  ✕";

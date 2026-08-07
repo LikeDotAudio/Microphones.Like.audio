@@ -54,6 +54,7 @@ function showLoadError(err) {
 function wireFilterBar() {
   $("form").addEventListener("change", (e) => { state.form = e.target.value; applyFilters(); });
   $("price").addEventListener("change", (e) => { state.price = e.target.value; applyFilters(); });
+  $("x230Band").addEventListener("change", (e) => { state.x230 = e.target.value; applyFilters(); });
   $("sort").addEventListener("change", (e) => {
     state.sort = e.target.value;
     state.limit = PAGE();
