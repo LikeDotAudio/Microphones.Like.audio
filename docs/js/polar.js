@@ -30,12 +30,26 @@ export function polarPath(r, opt) {
   return d + "Z";
 }
 
-/* `curves` comes straight from config: [{shape, rot, scale, stroke}, …]. */
-export function iconSvg(curves) {
-  const paths = (curves || [])
-    .filter((c) => SHAPES[c.shape])
-    .map((c) => '<path class="' + (c.stroke ? "strokep" : "fillp") + '" d="' +
-      polarPath(SHAPES[c.shape], c) + '"/>')
-    .join("");
+/* Some buttons stand for something that has no polar pattern at all — a
+   wireless system carries a radio, not a capsule, so there is no curve to plot.
+   Those name a glyph in config instead of a set of curves. */
+export const GLYPHS = {
+  antenna:
+    '<path class="strokep" d="M5.5 9.2a9 9 0 0 1 13 0"/>' +
+    '<path class="strokep" d="M8.4 11.4a5.2 5.2 0 0 1 7.2 0"/>' +
+    '<circle class="fillp" cx="12" cy="13.2" r="1.7"/>' +
+    '<path class="strokep" d="M12 13.2V21"/>',
+};
+
+/* `curves` comes straight from config: [{shape, rot, scale, stroke}, …], or a
+   glyph name when the button is not a pattern. */
+export function iconSvg(curves, glyph) {
+  const paths = glyph
+    ? (GLYPHS[glyph] || "")
+    : (curves || [])
+      .filter((c) => SHAPES[c.shape])
+      .map((c) => '<path class="' + (c.stroke ? "strokep" : "fillp") + '" d="' +
+        polarPath(SHAPES[c.shape], c) + '"/>')
+      .join("");
   return '<svg viewBox="0 0 24 24" aria-hidden="true">' + paths + "</svg>";
 }

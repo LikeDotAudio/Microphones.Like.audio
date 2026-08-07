@@ -90,7 +90,9 @@ AVAILABILITY = [
 # One button per polar-pattern facet. `match` lists the pattern names exactly as
 # they appear in the corpus; `icon` is the polar curve(s) to draw, by name of
 # the equation in js/polar.js. `multi` matches the is_multipattern flag instead
-# of a pattern name.
+# of a pattern name, and `kind` matches the record kind — the one button on this
+# bar that is not a pattern at all, because a wireless system has no capsule to
+# have one. It draws a `glyph` from js/polar.js rather than a curve.
 PATTERNS = [
     {"key": "cardioid", "label": "Cardioid", "match": ["Cardioid"],
      "icon": [{"shape": "cardioid"}]},
@@ -114,6 +116,8 @@ PATTERNS = [
      "match": ["9 polar patterns", "continuously variable pattern selection"],
      "icon": [{"shape": "cardioid", "scale": 0.66},
               {"shape": "omni", "scale": 0.95, "stroke": True}]},
+    {"key": "wireless", "label": "Wireless systems", "kind": "rf", "match": [],
+     "noun": "systems", "glyph": "antenna"},
 ]
 
 # Long corpus names shortened for tables and chart axes.

@@ -108,7 +108,11 @@ def build_config(mics, rf_records, warn):
     for spec in V.PATTERNS:
         entry = dict(spec)
         claimed.update(spec["match"])
-        if spec.get("multi"):
+        if spec.get("kind") == "rf":
+            # Not a pattern: this button asks what the record is, so it counts
+            # against the RF catalogue rather than against any pattern name.
+            entry["count"] = len(rf_records)
+        elif spec.get("multi"):
             entry["count"] = sum(1 for m in mics if m["classification"].get("is_multipattern"))
         else:
             entry["count"] = sum(1 for m in mics if any(n in spec["match"] for n in patterns_of(m)))
