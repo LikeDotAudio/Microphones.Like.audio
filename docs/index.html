@@ -20,6 +20,7 @@
   <div class="brandmark">Microphone Browser</div>
   <nav class="nav">
     <a class="navlink" id="navBrowse" href="#/">Browse</a>
+    <a class="navlink" id="navGallery" href="#/gallery">Gallery</a>
     <a class="navlink" id="navWireless" href="#/wireless">Wireless</a>
     <a class="navlink" id="navTags" href="#/tags">Tags</a>
     <a class="navlink" id="navStats" href="#/stats">Statistics</a>
@@ -67,6 +68,18 @@
       <span class="stat" id="tagStat"></span>
     </div>
     <div class="taggrid" id="tagGrid"></div>
+  </div>
+</section>
+
+<!-- Photos only, grouped by manufacturer; see js/gallery.js. -->
+<section id="gallery" class="statsview" hidden>
+  <div class="statswrap">
+    <h2 class="vh">Gallery</h2>
+    <div class="tagbar">
+      <input id="galSearch" type="search" placeholder="Filter brands and models…" autocomplete="off" spellcheck="false">
+      <span class="stat" id="galStat"></span>
+    </div>
+    <div id="galGrid"></div>
   </div>
 </section>
 

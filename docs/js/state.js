@@ -13,6 +13,8 @@ export const state = {
   tagMembers: new Map(),   // tag -> Set("<brand>/<model>")
   tagQuery: "",
   tagSort: "count",
+  galQuery: "",            // Gallery search box
+  galLimit: 0,             // manufacturer groups drawn in the Gallery so far
   rf: null,                // [rf records] once rf.json has loaded
   rfQuery: "",
   rfBand: "all",

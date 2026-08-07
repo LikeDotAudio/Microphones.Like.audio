@@ -362,6 +362,44 @@ details.rawdump > summary { cursor: pointer; color: var(--muted); font-size: 12.
 .tagcell { position: relative; overflow: hidden; }
 .tagcell.on .bar { background: #fff; opacity: .5; }
 
+/* ---------- gallery ----------
+   One block per manufacturer, each a grid of photos. The tiles are a fixed
+   height so the rows line up whatever shape the photo is, and the picture is
+   contained rather than cropped — a mic cropped to a square stops being
+   recognisable, which is the whole point of this view. */
+.ggroup { margin-bottom: 26px; }
+.ghead {
+  display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px;
+  padding-bottom: 5px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 2; background: var(--bg);
+}
+.ghead .gb { font-size: 13.5px; font-weight: 650; letter-spacing: -.01em; }
+.ghead .gc { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.ggrid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+.gcell {
+  display: flex; flex-direction: column; gap: 6px; padding: 8px 8px 9px;
+  font: inherit; text-align: center; cursor: pointer; color: var(--text);
+  background: var(--panel); border: 1px solid var(--border); border-radius: 9px;
+}
+.gcell:hover { border-color: var(--accent); }
+.gthumb {
+  height: 104px; border-radius: 6px; background: var(--chip);
+  display: grid; place-items: center; overflow: hidden;
+}
+.gthumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+/* No photo on file: an empty frame keeps the mic in the grid rather than
+   silently dropping it from a view that claims to hold everything. */
+.gthumb.none::after {
+  content: "no photo"; font-size: 10px; color: var(--faint); letter-spacing: .04em;
+}
+.gname {
+  font-size: 11.5px; line-height: 1.3; overflow: hidden;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+}
+/* The shared button is sized for the model pane's padding; here it spans the
+   column like the grids above it. */
+#galGrid .showmore { width: 100%; margin: 2px 0 10px; }
+
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 10px; }
 .tile {
   background: var(--panel); border: 1px solid var(--border);

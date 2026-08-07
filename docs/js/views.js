@@ -4,6 +4,7 @@
 import { $ } from "./dom.js";
 import { PAGE } from "./config.js";
 import { filtersActive } from "./filters.js";
+import { renderGallery } from "./gallery.js";
 import { go, hashParts } from "./hash.js";
 import { renderDetail } from "./detail.js";
 import { renderModels } from "./models.js";
@@ -20,12 +21,14 @@ let routed = false;      // has route() run once? distinguishes deep links from 
 export function showView(name) {
   const stats = name === "stats";
   const tags = name === "tags";
+  const gallery = name === "gallery";
   const wireless = name === "wireless";
   const x230 = name === "x230";
-  const browse = !stats && !tags && !wireless && !x230;
+  const browse = !stats && !tags && !gallery && !wireless && !x230;
   document.querySelector("main").hidden = !browse;
   $("stats").hidden = !stats;
   $("tags").hidden = !tags;
+  $("gallery").hidden = !gallery;
   $("wireless").hidden = !wireless;
   $("x230").hidden = !x230;
   // Search, the pattern buttons and the filter bar drive the browse panes
@@ -35,12 +38,14 @@ export function showView(name) {
   $("patbar").hidden = !browse;
   $("filters").hidden = !browse;
   $("navBrowse").classList.toggle("on", browse);
+  $("navGallery").classList.toggle("on", gallery);
   $("navWireless").classList.toggle("on", wireless);
   $("navTags").classList.toggle("on", tags);
   $("navStats").classList.toggle("on", stats);
   $("navX230").classList.toggle("on", x230);
   if (stats && !statsBuilt) { renderStats(); statsBuilt = true; }
   if (tags) renderTagView();
+  if (gallery) renderGallery();
   if (wireless) { renderRfControls(); renderRfView(); }
   if (x230) renderX230View();
 }
@@ -59,6 +64,7 @@ export function route() {
 
   if (parts[0] === "stats") { showView("stats"); return; }
   if (parts[0] === "tags") { showView("tags"); return; }
+  if (parts[0] === "gallery") { showView("gallery"); return; }
   if (parts[0] === "wireless") { showView("wireless"); return; }
   if (parts[0] === "x230") { showView("x230"); return; }
   /* #/tag/<name> is the shareable form of "browse everything tagged X". */

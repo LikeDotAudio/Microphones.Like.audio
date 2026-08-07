@@ -5,6 +5,7 @@ import { PAGE, loadConfig } from "./config.js";
 import { renderControls } from "./controls.js";
 import { loadIndex } from "./data.js";
 import { clearFilters } from "./filters.js";
+import { renderGallery } from "./gallery.js";
 import { renderModels } from "./models.js";
 import { renderPatternBar } from "./patterns.js";
 import { state } from "./state.js";
@@ -105,6 +106,17 @@ $("tagSort").addEventListener("change", (e) => {
   state.tagSort = e.target.value;
   renderTagView();
 });
+let galSearchTimer;
+$("galSearch").addEventListener("input", (e) => {
+  clearTimeout(galSearchTimer);
+  const v = e.target.value.trim().toLowerCase();
+  galSearchTimer = setTimeout(() => {
+    state.galQuery = v;
+    state.galLimit = 0;      // a new query starts at the top of the grid again
+    renderGallery();
+  }, 120);
+});
+
 $("tagGrid").addEventListener("click", (e) => {
   const cell = e.target.closest(".tagcell");
   if (cell) openTag(cell.dataset.tag);
