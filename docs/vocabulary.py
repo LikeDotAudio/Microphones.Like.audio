@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""The controlled vocabularies the browser's UI is built from.
+
+Everything the page offers as a choice — transducer types, form factors, polar
+pattern buttons, price bands, sort orders, table and CSV columns — is described
+here and shipped as data/config.json. The page holds no vocabulary of its own,
+so adding a facet or a CSV column is an edit to this file plus a rebuild, with
+no markup or JavaScript to touch.
+
+Entries carrying `match` or `path` are checked against the corpus at build time
+(see build_config), which is what stops the UI from quietly offering a filter
+the data can never satisfy.
+"""
+
+# ---------------------------------------------------------------- facets
+
+# Transducer types, in the order the chips appear. `key` is the value stored in
+# a model row; None is the catch-all chip.
+TYPES = [
+    {"key": "all", "label": "All"},
+    {"key": "condenser", "label": "Condenser"},
+    {"key": "dynamic", "label": "Dynamic"},
+    {"key": "ribbon", "label": "Ribbon"},
+    {"key": "boundary", "label": "Boundary"},
+    {"key": "hybrid", "label": "Hybrid"},
+    {"key": "unknown", "label": "Unclassified"},
+]
+
+FORM_LABELS = {
+    "side-address": "Side-address",
+    "end-address": "End-address",
+    "pencil": "Pencil",
+    "handheld": "Handheld",
+    "shotgun": "Shotgun",
+    "boundary": "Boundary",
+    "lavalier": "Lavalier",
+}
+
+# Boolean columns on a model row that read well as a toggle.
+TRAITS = [
+    {"key": "tube", "label": "Tube"},
+    {"key": "multi", "label": "Multipattern"},
+    {"key": "stereo", "label": "Stereo"},
+]
+
+# MSRP bands, [min, max) in dollars. `none` selects mics with no listed price.
+PRICE_BANDS = [
+    {"key": "any", "label": "Any price"},
+    {"key": "0-100", "label": "Under $100", "min": 0, "max": 100},
+    {"key": "100-300", "label": "$100 – $300", "min": 100, "max": 300},
+    {"key": "300-700", "label": "$300 – $700", "min": 300, "max": 700},
+    {"key": "700-1500", "label": "$700 – $1,500", "min": 700, "max": 1500},
+    {"key": "1500-4000", "label": "$1,500 – $4,000", "min": 1500, "max": 4000},
+    {"key": "4000-", "label": "$4,000 and up", "min": 4000},
+    {"key": "none", "label": "No price listed", "none": True},
+]
+
+SORTS = [
+    {"key": "name", "label": "Name"},
+    {"key": "price", "label": "Price ↑"},
+    {"key": "price-desc", "label": "Price ↓"},
+    {"key": "year", "label": "Newest"},
+]
+
+TAG_SORTS = [
+    {"key": "count", "label": "Most used"},
+    {"key": "count-asc", "label": "Least used"},
+    {"key": "name", "label": "A → Z"},
+    {"key": "name-desc", "label": "Z → A"},
+]
+
+AVAILABILITY = [
+    {"key": "all", "label": "Any status"},
+    {"key": "current", "label": "Current"},
+    {"key": "discontinued", "label": "Discontinued"},
+]
+
+# ------------------------------------------------------------- patterns
+
+# One button per polar-pattern facet. `match` lists the pattern names exactly as
+# they appear in the corpus; `icon` is the polar curve(s) to draw, by name of
+# the equation in js/polar.js. `multi` matches the is_multipattern flag instead
+# of a pattern name.
+PATTERNS = [
+    {"key": "cardioid", "label": "Cardioid", "match": ["Cardioid"],
+     "icon": [{"shape": "cardioid"}]},
+    {"key": "omni", "label": "Omnidirectional", "match": ["Omnidirectional"],
+     "icon": [{"shape": "omni", "scale": 0.92}]},
+    {"key": "fig8", "label": "Bidirectional (figure-8)", "match": ["Bidirectional"],
+     "icon": [{"shape": "fig8"}]},
+    {"key": "super", "label": "Supercardioid", "match": ["Supercardioid"],
+     "icon": [{"shape": "super"}]},
+    {"key": "hyper", "label": "Hypercardioid", "match": ["Hypercardioid"],
+     "icon": [{"shape": "hyper"}]},
+    {"key": "wide", "label": "Wide cardioid", "match": ["Wide Cardioid"],
+     "icon": [{"shape": "wide"}]},
+    {"key": "shotgun", "label": "Shotgun / lobar", "match": ["Shotgun"],
+     "icon": [{"shape": "shotgun"}]},
+    {"key": "stereo", "label": "Stereo (X/Y, M-S, Blumlein, binaural)",
+     "match": ["X/Y Stereo", "Mid-Side Stereo", "Blumlein", "Binaural"],
+     "icon": [{"shape": "cardioid", "rot": -0.75, "scale": 0.8},
+              {"shape": "cardioid", "rot": 0.75, "scale": 0.8}]},
+    {"key": "multi", "label": "Switchable / multipattern", "multi": True,
+     "match": ["9 polar patterns", "continuously variable pattern selection"],
+     "icon": [{"shape": "cardioid", "scale": 0.66},
+              {"shape": "omni", "scale": 0.95, "stroke": True}]},
+]
+
+# Long corpus names shortened for tables and chart axes.
+PATTERN_DISPLAY = {
+    "9 polar patterns": "9 switchable",
+    "continuously variable pattern selection": "continuously variable",
+}
+
+# --------------------------------------------------------------- charts
+
+# Stacked-bar series, in stacking order. Boundary/hybrid/unknown are ~7% between
+# them and would render as slivers, so they fold into one "Other" slot rather
+# than eating categorical hues that then fail CVD separation against neighbours.
+TYPE_SERIES = [
+    {"key": "condenser", "label": "Condenser", "css": "var(--s1)"},
+    {"key": "dynamic", "label": "Dynamic", "css": "var(--s2)"},
+    {"key": "ribbon", "label": "Ribbon", "css": "var(--s3)"},
+    {"key": "other", "label": "Other / unspecified", "css": "var(--s4)"},
+]
+
+# Types that keep their own bar; anything else falls into the "other" series.
+TYPE_SERIES_KEYS = ["condenser", "dynamic", "ribbon"]
+
+# One hue per transducer type, shared by tree dots, list chips and charts.
+TYPE_COLORS = {
+    "condenser": "var(--s1)",
+    "dynamic": "var(--s2)",
+    "ribbon": "var(--s3)",
+    "boundary": "var(--s4)",
+    "hybrid": "var(--s5)",
+    "unknown": "var(--faint)",
+}
+
+# Buckets for the price histogram, [min, max) in dollars.
+PRICE_HISTOGRAM = [
+    {"label": "< $100", "min": 0, "max": 100},
+    {"label": "$100–249", "min": 100, "max": 250},
+    {"label": "$250–499", "min": 250, "max": 500},
+    {"label": "$500–999", "min": 500, "max": 1000},
+    {"label": "$1k–2k", "min": 1000, "max": 2000},
+    {"label": "$2k–5k", "min": 2000, "max": 5000},
+    {"label": "$5k+", "min": 5000},
+]
+
+# Flags charted on the "Attributes" figure. `field` is a boolean model-row
+# column; `equals` matches a string column instead.
+STAT_ATTRIBUTES = [
+    {"label": "Tube", "field": "tube"},
+    {"label": "Multipattern", "field": "multi"},
+    {"label": "Stereo", "field": "stereo"},
+    {"label": "Sold as a set", "field": "set"},
+    {"label": "Has MSRP", "field": "msrp", "present": True},
+    {"label": "Currently sold", "field": "avail", "equals": "current"},
+]
+
+# Controls on the brand-mix chart.
+BRAND_CHART_TOPS = [
+    {"key": "25", "label": "Top 25"},
+    {"key": "50", "label": "Top 50"},
+    {"key": "100", "label": "Top 100"},
+    {"key": "999", "label": "All brands"},
+]
+
+BRAND_CHART_ORDERS = [
+    {"key": "total", "label": "Catalogue size"},
+    {"key": "condenser", "label": "% condenser"},
+    {"key": "dynamic", "label": "% dynamic"},
+    {"key": "ribbon", "label": "% ribbon"},
+    {"key": "name", "label": "Name"},
+]
+
+# ------------------------------------------------------------- columns
+
+# The statistics table. `key` is a field on a flattened index row.
+EXPLORER_COLUMNS = [
+    {"key": "brand", "label": "Brand"},
+    {"key": "model", "label": "Model"},
+    {"key": "type", "label": "Type"},
+    {"key": "patterns", "label": "Patterns", "wrap": True, "patternNames": True},
+    {"key": "form", "label": "Form"},
+    {"key": "msrp", "label": "MSRP", "num": True},
+    {"key": "year", "label": "Year", "num": True},
+    {"key": "avail", "label": "Status"},
+]
+
+# The CSV export. `path` is a dotted path into a full microphone record.
+#   kind omitted    value at `path`
+#   bool            value at `path` as yes/no
+#   list            array at `path`, joined; `field` picks one key off each item
+#   perPattern      one entry per pickup pattern, prefixed when there are several
+#   freqPerPattern  same, formatted as a frequency range
+#   link            a deep link back into this browser
+CSV_COLUMNS = [
+    {"label": "Brand", "path": "identity.manufacturer"},
+    {"label": "Model", "path": "identity.model"},
+    {"label": "Full name", "path": "identity.full_name"},
+    {"label": "Subtitle", "path": "classification.subtitle"},
+    {"label": "Product type", "path": "classification.product_type"},
+    {"label": "Transducer type", "path": "classification.transducer_type"},
+    {"label": "Form factor", "path": "classification.form_factor"},
+    {"label": "Tube", "path": "classification.is_tube", "kind": "bool"},
+    {"label": "Multipattern", "path": "classification.is_multipattern", "kind": "bool"},
+    {"label": "Stereo", "path": "classification.is_stereo", "kind": "bool"},
+    {"label": "Tags", "path": "classification.tags", "kind": "list"},
+    {"label": "Patterns", "path": "specifications.pickup_patterns", "kind": "list", "field": "pattern"},
+    {"label": "Pattern icons", "path": "classification.pattern_icons", "kind": "list"},
+    {"label": "Sensitivity (mV/Pa)", "kind": "perPattern", "field": "sensitivity_mv_pa"},
+    {"label": "Frequency response (Hz)", "kind": "freqPerPattern"},
+    {"label": "Pattern spec (raw)", "path": "specifications.pickup_patterns", "kind": "list", "field": "raw"},
+    {"label": "Pads", "path": "specifications.pads", "kind": "list", "field": "raw"},
+    {"label": "Filters", "path": "specifications.filters", "kind": "list", "field": "raw"},
+    {"label": "Diaphragm diameter (mm)", "path": "specifications.capsule.diaphragm_diameter_mm"},
+    {"label": "Capsule diameter (mm)", "path": "specifications.capsule.capsule_diameter_mm"},
+    {"label": "Diaphragm gauge (µm)", "path": "specifications.capsule.diaphragm_gauge_microns"},
+    {"label": "Capsule (raw)", "path": "specifications.capsule.raw"},
+    {"label": "Impedance (ohms)", "path": "specifications.impedance.ohms"},
+    {"label": "Impedance category", "path": "specifications.impedance.category"},
+    {"label": "Impedance (raw)", "path": "specifications.impedance.raw"},
+    {"label": "Max SPL (dB)", "path": "specifications.spl_noise.max_spl_db"},
+    {"label": "Self noise (dBA)", "path": "specifications.spl_noise.self_noise_dba"},
+    {"label": "SPL/noise (raw)", "path": "specifications.spl_noise.raw"},
+    {"label": "Weight (g)", "path": "specifications.physical.weight.grams"},
+    {"label": "Weight (oz)", "path": "specifications.physical.weight.ounces"},
+    {"label": "Length (mm)", "path": "specifications.physical.length.mm"},
+    {"label": "Length (in)", "path": "specifications.physical.length.inches"},
+    {"label": "Max diameter (mm)", "path": "specifications.physical.max_diameter.mm"},
+    {"label": "Max diameter (in)", "path": "specifications.physical.max_diameter.inches"},
+    {"label": "Interfaces", "path": "specifications.interfaces", "kind": "list", "field": "raw"},
+    {"label": "Requires phantom power", "path": "specifications.power.requires_phantom_power", "kind": "bool"},
+    {"label": "Phantom voltage (V)", "path": "specifications.power.phantom_voltage_v", "kind": "list"},
+    {"label": "Includes tube PSU", "path": "specifications.power.includes_tube_power_supply", "kind": "bool"},
+    {"label": "Battery compartment", "path": "specifications.power.has_battery_compartment", "kind": "bool"},
+    {"label": "Battery type", "path": "specifications.power.battery_type"},
+    {"label": "Power (raw)", "path": "specifications.power.raw"},
+    {"label": "MSRP", "path": "pricing.msrp_amount"},
+    {"label": "Currency", "path": "pricing.currency"},
+    {"label": "MSRP (raw)", "path": "pricing.msrp_raw"},
+    {"label": "Availability", "path": "pricing.availability"},
+    {"label": "Release year", "path": "content.release_year"},
+    {"label": "Related microphones", "path": "related_microphones", "kind": "list", "field": "name"},
+    {"label": "Documentation links", "path": "links.documentation", "kind": "list", "field": "url"},
+    {"label": "Review links", "path": "links.reviews_news", "kind": "list", "field": "url"},
+    {"label": "Awards", "path": "links.awards", "kind": "list", "field": "title"},
+    {"label": "Photo", "path": "media.primary_photo.full_url"},
+    {"label": "Description", "path": "content.description_text"},
+    {"label": "Source URL", "path": "source.url"},
+    {"label": "Mic id", "path": "source.mic_id"},
+    {"label": "Browser link", "kind": "link"},
+]
