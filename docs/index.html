@@ -539,7 +539,19 @@ function sanitize(html) {
         n.removeAttribute(a.name);
       }
     });
-    if (n.tagName === "A") { n.target = "_blank"; n.rel = "noopener noreferrer"; }
+    if (n.tagName !== "A") return;
+    /* Prose links to other mics in the corpus stay inside the browser; the
+       rest leave for recordinghacks and the manufacturers. */
+    const target = parsePermalink(n.getAttribute("href"));
+    if (target) {
+      n.setAttribute("href", hashFor(target.brand, target.model));
+      n.className = "inapp";
+      n.removeAttribute("target");
+      n.removeAttribute("rel");
+    } else {
+      n.target = "_blank";
+      n.rel = "noopener noreferrer";
+    }
   });
   return tpl.content;
 }
@@ -1241,8 +1253,13 @@ function buildDetail(mic) {
       const ul = el("ul", "linklist");
       for (const l of items) {
         const li = el("li");
-        li.appendChild(extLink(l.url, l.title || l.url));
-        if (l.link_type && l.link_type !== "www") li.appendChild(el("span", "lt", l.link_type));
+        const inApp = parsePermalink(l.url);
+        li.appendChild(appLink(l.url, l.title || l.url));
+        /* "internal" only ever meant "back to recordinghacks" — once the link
+           lands in this browser instead, the label is noise. */
+        if (!inApp && l.link_type && l.link_type !== "www") {
+          li.appendChild(el("span", "lt", l.link_type));
+        }
         ul.appendChild(li);
       }
       wrap.appendChild(boxed(title, ul));
@@ -1308,7 +1325,11 @@ function parsePermalink(url) {
   const m = /\/microphones\/([^\/?#]+)\/([^\/?#]+)\/?$/.exec(url);
   if (!m) return null;
   const brand = decodeURIComponent(m[1]);
-  return state.byBrand.has(brand) ? { brand, model: decodeURIComponent(m[2]) } : null;
+  const model = decodeURIComponent(m[2]);
+  const rec = state.byBrand.get(brand);
+  /* Only claim the link if we actually hold that model — otherwise the detail
+     pane would route to a mic it can't load. */
+  return rec && rec.models.some((x) => x.slug === model) ? { brand, model } : null;
 }
 
 /* ================================================================ STATISTICS
@@ -1812,13 +1833,18 @@ function buildExplorer() {
 }
 
 /* ----------------------------------------------------------------- routing */
-function go(brand, model) {
-  location.hash = brand
+function hashFor(brand, model) {
+  return brand
     ? "#/" + encodeURIComponent(brand) + (model ? "/" + encodeURIComponent(model) : "")
     : "#/";
 }
 
+function go(brand, model) {
+  location.hash = hashFor(brand, model);
+}
+
 let statsBuilt = false;
+let routed = false;      // has route() run once? distinguishes deep links from clicks
 
 function showView(name) {
   const stats = name === "stats";
@@ -1855,8 +1881,12 @@ function route() {
   state.model = state.brand && model ? model : null;
 
   /* A single-brand scope follows the hash; the all-brands sweep stays put, so
-     clicking a result doesn't throw away the list you just filtered down to. */
-  if (brandChanged && state.scope !== null) {
+     clicking a result doesn't throw away the list you just filtered down to.
+     A brand named in the hash at load time is a deep link, not a click, so it
+     scopes the pane even though the sweep is where we start. */
+  const deepLink = !routed && state.brand;
+  routed = true;
+  if (brandChanged && (state.scope !== null || deepLink)) {
     state.scope = state.brand;
     state.limit = PAGE;
     renderTree();

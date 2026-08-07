@@ -4,6 +4,7 @@
 Outputs (relative to this script):
     data/index.json          brands + a compact row for every model (fast boot, global search)
     data/brands/<slug>.json  full records for one brand, loaded on demand
+    data/tags.json           every site tag with the mics carrying it, loaded on demand
 
 Run:  python3 docs/build_data.py
 """
