@@ -509,7 +509,17 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
   .patbar::-webkit-scrollbar { display: none; }
   .pat { flex: none; }
 
-  .filters { padding: 6px 8px; }
+  /* Two sideways strips rather than four wrapped lines — wrapping here would
+     eat the whole quarter the model list is meant to get. */
+  .filters { padding: 6px 8px; gap: 5px; }
+  .frow {
+    flex-wrap: nowrap;
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .frow::-webkit-scrollbar { display: none; }
+  .frow > * { flex: none; }
+
   .detail { padding: 14px 14px 50px; }
   .statsview { padding: 16px 14px 60px; }
 }
