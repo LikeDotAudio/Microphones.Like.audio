@@ -1,0 +1,52 @@
+name: Publish to microphones.like.audio
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "Research/microphones.json"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+    inputs:
+      full_sync:
+        description: "Ignore the remote sync state and re-upload every file"
+        type: boolean
+        default: false
+
+# Never let two deploys write to the server at the same time.
+concurrency:
+  group: ftps-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # docs/data is generated, not committed — rebuild it from the source dataset.
+      - name: Build data files
+        run: python3 docs/build_data.py
+
+      - name: Upload over FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
+          local-dir: ./docs/
+          server-dir: ${{ vars.FTP_SERVER_DIR || './' }}
+          state-name: .ftp-deploy-sync-state.json
+          dangerous-clean-slate: ${{ inputs.full_sync == true }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/build_data.py
+            **/README.md
