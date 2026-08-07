@@ -57,7 +57,6 @@ export function renderModels() {
   const page = PAGE();
   host.innerHTML = "";
 
-  $("filters").hidden = false;
   $("modelHead").textContent = brand ? brand.name : "All microphones";
 
   const rows = visibleModels(brand);

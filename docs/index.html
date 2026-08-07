@@ -32,19 +32,23 @@
   <button class="iconbtn" id="theme" title="Toggle theme">◐</button>
 </header>
 
+<!-- Above the panes, not inside one: these facets narrow the brand tree as
+     much as the model list. Both rows are filled by js/controls.js from
+     data/config.json. -->
+<div class="filters" id="filters" hidden>
+  <div class="frow" id="frowType"></div>
+  <div class="frow" id="frowMore"></div>
+</div>
+
 <main>
   <div class="pane">
     <div class="pane-head"><h2>Brands</h2><span class="sub" id="brandCount"></span></div>
     <div class="pane-body" id="tree"></div>
   </div>
 
-  <div class="pane">
+  <!-- Hidden on narrow screens: the brand tree already folds out to models. -->
+  <div class="pane" id="modelPane">
     <div class="pane-head"><h2 id="modelHead">Models</h2><span class="sub" id="modelCount"></span></div>
-    <!-- Both rows are filled by js/controls.js from data/config.json. -->
-    <div class="filters" id="filters" hidden>
-      <div class="frow" id="frowType"></div>
-      <div class="frow" id="frowMore"></div>
-    </div>
     <div class="pane-body" id="models"><div class="empty">Loading…</div></div>
   </div>
 

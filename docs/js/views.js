@@ -28,10 +28,12 @@ export function showView(name) {
   $("tags").hidden = !tags;
   $("wireless").hidden = !wireless;
   $("x230").hidden = !x230;
-  // Search and the pattern buttons drive the browse panes only; the other
-  // views carry their own filters.
+  // Search, the pattern buttons and the filter bar drive the browse panes
+  // only; the other views carry their own filters. The bar sits outside
+  // <main>, so hiding main is not enough to take it away.
   $("search").hidden = !browse;
   $("patbar").hidden = !browse;
+  $("filters").hidden = !browse;
   $("navBrowse").classList.toggle("on", browse);
   $("navWireless").classList.toggle("on", wireless);
   $("navTags").classList.toggle("on", tags);
