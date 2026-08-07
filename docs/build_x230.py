@@ -23,6 +23,26 @@ ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, "Research", "aes_x230_profile.json")
 SCHEMA = os.path.join(ROOT, "Research", "aes_x230_profile.schema.json")
 
+# Shown in full on the X230 tab. Shipped as parsed objects rather than as
+# escaped strings: the browser pretty-prints them, and a page that renders the
+# schema it actually validates against cannot show a stale copy.
+SCHEMAS = [
+    {
+        "key": "profile",
+        "title": "The profile",
+        "filename": "Research/aes_x230_profile.schema.json",
+        "blurb": "The X230 data model itself: blocks, parameters, and the four-part AES70 "
+                 "binding each parameter carries. Research/aes_x230_profile.json is an instance.",
+    },
+    {
+        "key": "device",
+        "title": "A device read against it",
+        "filename": "Research/aes_x230_device.schema.json",
+        "blurb": "One catalogue record scored against the profile — the object every device "
+                 "page renders, and where the five states and the score are defined.",
+    },
+]
+
 
 def _check(profile, warn):
     """Cross-references a schema can't express, checked against the profile."""
@@ -108,6 +128,26 @@ def write(out_dir, profile, wordbook=None):
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(payload, fh, ensure_ascii=False, separators=(",", ":"))
     return profile
+
+
+def write_report(out_dir, statistics, warn):
+    """Emit data/x230_report.json: the schemas in full, and how completely the
+    catalogue answers the profile. Its own file because only the X230 tab wants
+    it — every device page fetches x230.json, and should not pay for this."""
+    schemas = []
+    for spec in SCHEMAS:
+        path = os.path.join(ROOT, spec["filename"])
+        if not os.path.exists(path):
+            warn("schema not found: %s" % spec["filename"])
+            continue
+        with open(path, encoding="utf-8") as fh:
+            schemas.append(dict(spec, schema=json.load(fh)))
+
+    path = os.path.join(out_dir, "x230_report.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({"schemas": schemas, "statistics": statistics}, fh,
+                  ensure_ascii=False, separators=(",", ":"))
+    return path
 
 
 if __name__ == "__main__":

@@ -590,6 +590,9 @@ details.x230na .x230row { opacity: .7; }
 
 /* --- the X230 tab --- */
 .x230wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
+/* Grid items default to min-width:auto, so one long line inside the schema
+   <pre> would widen the whole column and push the cards past the page. */
+.x230wrap > * { min-width: 0; }
 .x230mast h2 { margin: 0 0 8px; font-size: 21px; }
 .x230meta { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
 .x230purpose { margin: 0 0 8px; font-size: 14px; line-height: 1.6; max-width: 74ch; }
@@ -678,3 +681,36 @@ table.x230tab tr.open { background: color-mix(in srgb, var(--x-open) 7%, transpa
 .x230score { display: flex; align-items: baseline; gap: 9px; margin-bottom: 8px; }
 .x230score b { font-size: 26px; font-variant-numeric: tabular-nums; line-height: 1; }
 .x230score span { font-size: 11.5px; color: var(--muted); }
+
+/* ---------- X230: schema view and corpus statistics ---------- */
+.x230tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+pre.jsoncode {
+  margin: 10px 0 0; padding: 13px 15px; max-height: 520px; overflow: auto;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+  font: 11.5px/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--muted); white-space: pre; tab-size: 2;
+}
+pre.jsoncode .jk { color: var(--text); font-weight: 600; }   /* object key   */
+pre.jsoncode .js { color: var(--s3); }                        /* string value */
+pre.jsoncode .jn { color: var(--s1); }                        /* number       */
+pre.jsoncode .jl { color: var(--s5); }                        /* true/false/null */
+
+.x230tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.x230tile {
+  padding: 11px 13px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--panel-2); display: grid; gap: 3px;
+}
+.x230tile b { font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.x230tile span { font-size: 11px; color: var(--muted); }
+
+.x230hist { display: flex; align-items: flex-end; gap: 6px; height: 150px; margin: 6px 0 4px; }
+.x230bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; text-align: center; }
+.x230bar i { display: block; background: var(--s1); border-radius: 3px 3px 0 0; min-height: 2px; }
+.x230bar.zero i { background: var(--border); }
+.x230bar .n { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; margin-bottom: 3px; }
+.x230bar .x { font-size: 10px; color: var(--faint); margin-top: 5px; white-space: nowrap; }
+
+table.x230tab td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.x230tab td.fillcell { width: 34%; min-width: 110px; }
+.x230fill { height: 7px; border-radius: 4px; background: var(--chip); overflow: hidden; }
+.x230fill i { display: block; height: 100%; background: var(--s3); border-radius: 4px; }

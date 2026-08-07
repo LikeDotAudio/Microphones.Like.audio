@@ -8,6 +8,140 @@
 import { $, el } from "./dom.js";
 import { ensureX230, x230 } from "./x230.js";
 
+/* The schemas and the corpus statistics are their own fetch: every device page
+   loads x230.json for its panel, and none of them needs this. */
+let reportPromise = null;
+
+function ensureReport() {
+  if (!reportPromise) {
+    reportPromise = fetch("data/x230_report.json")
+      .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .catch((err) => { reportPromise = null; throw err; });
+  }
+  return reportPromise;
+}
+
+/* JSON as nodes rather than markup — no innerHTML anywhere near a data file.
+   One pass: quoted runs (a key if a colon follows), literals, numbers. */
+const JSON_TOKEN = /("(?:\\.|[^"\\])*"\s*:?)|(\btrue\b|\bfalse\b|\bnull\b)|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g;
+
+function jsonNodes(text) {
+  const frag = document.createDocumentFragment();
+  let last = 0, m;
+  JSON_TOKEN.lastIndex = 0;
+  while ((m = JSON_TOKEN.exec(text)) !== null) {
+    if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+    const cls = m[1] ? (m[1].trimEnd().endsWith(":") ? "jk" : "js") : m[2] ? "jl" : "jn";
+    frag.appendChild(el("span", cls, m[0]));
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+  return frag;
+}
+
+function schemaCard(schemas) {
+  const box = el("div", "x230card");
+  box.appendChild(el("h3", null, "The schema, in JSON"));
+
+  const bar = el("div", "x230tabs");
+  const blurb = el("p", "x230sum2");
+  const file = el("div", "x230no");
+  const pre = el("pre", "jsoncode");
+
+  const show = (spec, btn) => {
+    bar.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b === btn));
+    blurb.textContent = spec.blurb;
+    file.textContent = spec.filename + " · " +
+      Object.keys(spec.schema.properties || {}).length + " top-level properties";
+    pre.innerHTML = "";
+    pre.appendChild(jsonNodes(JSON.stringify(spec.schema, null, 2)));
+  };
+
+  schemas.forEach((spec, i) => {
+    const btn = el("button", "chip", spec.title);
+    btn.type = "button";
+    btn.addEventListener("click", () => show(spec, btn));
+    bar.appendChild(btn);
+    if (!i) setTimeout(() => show(spec, btn), 0);
+  });
+
+  box.append(bar, blurb, file, pre);
+  return box;
+}
+
+/* How completely the catalogue answers the profile, parameter by parameter. */
+function statsCard(stats) {
+  const box = el("div", "x230card");
+  box.appendChild(el("h3", null, "How complete the catalogue is"));
+
+  const tiles = el("div", "x230tiles");
+  const tile = (value, label) => {
+    const t = el("div", "x230tile");
+    t.appendChild(el("b", null, value));
+    t.appendChild(el("span", null, label));
+    tiles.appendChild(t);
+  };
+  const answered = stats.parameters.filter((p) => p.mapped > 0).length;
+  const silent = stats.parameters.filter((p) => p.fill_pct === 0).length;
+  tile(stats.records.total.toLocaleString(), "records read");
+  tile(stats.score.median + "%", "median score");
+  tile(answered + " / " + stats.parameters.length, "parameters ever answered");
+  tile(String(silent), "answered by nothing");
+  box.appendChild(tiles);
+
+  for (const note of stats.notes || []) box.appendChild(el("p", "x230sum2", note));
+
+  /* Score distribution. */
+  box.appendChild(el("h4", null, "Score distribution"));
+  const hist = el("div", "x230hist");
+  const peak = Math.max(...stats.score.histogram.map((b) => b.count), 1);
+  for (const bucket of stats.score.histogram) {
+    const col = el("div", "x230bar" + (bucket.count ? "" : " zero"));
+    const fill = el("i");
+    fill.style.height = ((bucket.count / peak) * 100).toFixed(1) + "%";
+    fill.title = bucket.count.toLocaleString() + " records scoring " + bucket.label;
+    col.append(el("span", "n", bucket.count ? bucket.count.toLocaleString() : ""),
+      fill, el("span", "x", bucket.label));
+    hist.appendChild(col);
+  }
+  box.appendChild(hist);
+
+  /* Per-parameter fill, best first. */
+  box.appendChild(el("h4", null, "Fill rate, parameter by parameter"));
+  box.appendChild(el("p", "x230sum2",
+    "The denominator is the records the parameter was actually asked of — mapped, absent or " +
+    "unknown. Records whose block never existed, and parameters the draft never bound, are " +
+    "left out rather than counted as failures."));
+
+  const table = el("table", "x230tab");
+  const head = el("tr");
+  ["Parameter", "Class", "Asked of", "Answered", "Fill", ""].forEach((h) =>
+    head.appendChild(el("th", null, h)));
+  table.appendChild(head);
+  for (const p of stats.parameters) {
+    const tr = el("tr", p.fill_pct === null ? "open" : null);
+    tr.appendChild(el("td", "nm", p.profile_name));
+    tr.appendChild(el("td", null, p.oca_class || "—"));
+    tr.appendChild(el("td", "num", p.asked ? p.asked.toLocaleString() : "—"));
+    tr.appendChild(el("td", "num", p.asked ? p.mapped.toLocaleString() : "—"));
+    tr.appendChild(el("td", "num", p.fill_pct === null ? "never asked" : p.fill_pct + "%"));
+    const barCell = el("td", "fillcell");
+    if (p.fill_pct !== null) {
+      const bar = el("div", "x230fill");
+      const got = el("i");
+      got.style.width = p.fill_pct + "%";
+      bar.appendChild(got);
+      barCell.appendChild(bar);
+    }
+    tr.appendChild(barCell);
+    table.appendChild(tr);
+  }
+  const wrap = el("div", "tablewrap");
+  wrap.appendChild(table);
+  box.appendChild(wrap);
+  return box;
+}
+
 /* The narrative is plain text apart from **bold** runs. */
 function rich(text) {
   const frag = document.createDocumentFragment();
@@ -129,17 +263,17 @@ export function renderX230View() {
   host.innerHTML = "";
   host.appendChild(el("div", "empty", "Loading the profile…"));
 
-  ensureX230().then(() => {
+  Promise.all([ensureX230(), ensureReport()]).then(([, report]) => {
     built = true;
     host.innerHTML = "";
-    host.appendChild(build(x230()));
+    host.appendChild(build(x230(), report));
   }).catch((err) => {
     host.innerHTML = "";
-    host.appendChild(el("div", "empty", "Could not load data/x230.json — " + err.message));
+    host.appendChild(el("div", "empty", "Could not load the X230 data files — " + err.message));
   });
 }
 
-function build(p) {
+function build(p, report) {
   const wrap = el("div", "x230wrap");
   const blockName = (key) => (p.blocks.find((b) => b.key === key) || {}).name || key;
 
@@ -195,6 +329,11 @@ function build(p) {
   (p.diagrams || []).forEach((d) => diag.appendChild(diagramCard(d)));
   wrap.appendChild(card("The three typical block diagrams", diag));
 
+  /* --- the schemas, in full --- */
+  if (report && report.schemas && report.schemas.length) {
+    wrap.appendChild(schemaCard(report.schemas));
+  }
+
   /* --- parameters --- */
   const audio = p.parameters.filter((x) => x.section === "audio");
   const rf = p.parameters.filter((x) => x.section === "rf");
@@ -204,6 +343,9 @@ function build(p) {
   params.appendChild(el("h4", null, "Radio parameters (" + rf.length + ") — “?” marks a block the parameter may apply to"));
   params.appendChild(paramTable(rf, blockName));
   wrap.appendChild(card("Every parameter in the profile", params));
+
+  /* --- corpus statistics --- */
+  if (report && report.statistics) wrap.appendChild(statsCard(report.statistics));
 
   /* --- enumerations --- */
   const en = p.enumerations && p.enumerations.polar_pattern_position;

@@ -65,6 +65,8 @@ the page.
   global search, filtering and the statistics view work from one request.
 - `data/brands/<brand>.json` — full records for one brand, fetched on demand.
 - `data/tags.json`, `data/rf.json`, `data/config.json`, `data/x230.json`.
+- `data/x230_report.json` — the schemas in full plus corpus-wide coverage
+  statistics. Its own file because only the X230 tab needs it.
 
 ## Running locally
 
@@ -147,8 +149,33 @@ blocks and how they follow the signal, the radio half's applicability grid, how
 an object list is written, all three block diagrams summarised, both parameter
 tables, the polar-pattern position enumeration, and what the draft leaves open.
 
-Every word of it comes from `Research/aes_x230_profile.json`, so the tab cannot
-drift from the profile the device pages are scored against.
+It also carries:
+
+- **The schema, in JSON** — both schemas rendered in full, switchable: the
+  profile model and the per-device report. They are shipped as parsed objects
+  and pretty-printed in the page, so what you read is the schema the build
+  actually validates against.
+- **How complete the catalogue is** — the corpus read against the profile.
+  Headline counts, a score histogram, and a fill rate for every parameter with
+  its denominator: the records the parameter was actually *asked* of. Blocks a
+  device never instantiates and parameters the draft never bound are left out
+  rather than counted as failures.
+
+The finding is worth stating plainly. **9 of the profile's 38 parameters are
+answered by at least one record; 23 are answered by none.** Four are answered
+every time they are asked — Manufacturer, Device name, Frequency Select,
+Frequency Band Select — and after those the best covered are Polar pattern
+(84%), Sensitivity (75%) and Pattern parameter (70%). Pad (24%) and Low-Cut
+(26%) have a column in the source that is empty on most pages. The 23 silent
+ones are the profile's control surface: gain, polarity, mute, dynamics, EQ,
+clocking, radio state. Gain is asked of all 1,831 records and answered by none.
+
+That is the gap the profile exists to close: a specification sheet describes
+what a microphone *is*, and X230 describes what a controller can *do to it*.
+
+Every word of the tab comes from `Research/aes_x230_profile.json` and the
+build's own statistics, so it cannot drift from the profile the device pages are
+scored against.
 
 ## Statistics
 

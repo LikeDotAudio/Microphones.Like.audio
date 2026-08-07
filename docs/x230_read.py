@@ -545,3 +545,145 @@ def compact(report, book):
         "r": rows,
         "n": [[why, keys] for why, keys in skipped.items()],
     }
+
+
+class Summary:
+    """Corpus-wide coverage, accumulated one report at a time.
+
+    The per-device score answers "how much of the profile does this record
+    fill?". This answers the more useful question for a standards draft: which
+    parameters can a specification sheet answer at all, and which can none of
+    them answer? A parameter's denominator is the records where it was actually
+    asked — mapped, absent or unknown — so blocks a device never instantiates
+    and parameters the draft left unbound do not dilute the figure.
+    """
+
+    def __init__(self, profile):
+        self.profile = profile
+        self.names = {p["key"]: p for p in profile["parameters"]}
+        self.per_param = {p["key"]: dict.fromkeys(
+            ("mapped", "absent", "unknown", "not-applicable", "undefined-in-profile", "runtime"), 0)
+            for p in profile["parameters"]}
+        self.per_block = {b["key"]: dict.fromkeys(
+            ("instantiated", "not-instantiated", "unknown"), 0) for b in profile["blocks"]}
+        self.scores = []
+        self.kinds = {"microphone": 0, "rf": 0}
+
+    def add(self, report):
+        self.kinds[report["subject"]["kind"]] = self.kinds.get(report["subject"]["kind"], 0) + 1
+        if report["coverage"]["mapped_pct"] is not None:
+            self.scores.append(report["coverage"]["mapped_pct"])
+        for row in report["parameters"]:
+            self.per_param[row["key"]][row["status"]] += 1
+        for block in report["blocks"]:
+            self.per_block[block["key"]][block["status"]] += 1
+
+    @staticmethod
+    def _median(values):
+        if not values:
+            return None
+        ordered = sorted(values)
+        mid = len(ordered) // 2
+        if len(ordered) % 2:
+            return ordered[mid]
+        return round((ordered[mid - 1] + ordered[mid]) / 2, 1)
+
+    def _parameters(self):
+        rows = []
+        for key, counts in self.per_param.items():
+            spec = self.names[key]
+            asked = counts["mapped"] + counts["absent"] + counts["unknown"]
+            rows.append({
+                "key": key,
+                "profile_name": spec["profile_name"],
+                "section": spec["section"],
+                "block": spec.get("block"),
+                "oca_class": spec["oca"]["class"],
+                "mapped": counts["mapped"],
+                "absent": counts["absent"],
+                "unknown": counts["unknown"],
+                "not_applicable": counts["not-applicable"],
+                "undefined_in_profile": counts["undefined-in-profile"],
+                "runtime": counts["runtime"],
+                "asked": asked,
+                "fill_pct": round(counts["mapped"] / asked * 100) if asked else None,
+            })
+        # Best filled first; parameters nothing ever asks fall to the bottom.
+        rows.sort(key=lambda r: (r["fill_pct"] is None, -(r["fill_pct"] or 0), r["profile_name"]))
+        return rows
+
+    def _notes(self, params):
+        """The reading of the table, written where the numbers are, so the page
+        cannot describe a distribution it is not showing."""
+        total = len(self.scores)
+        answered = [p for p in params if p["fill_pct"] is not None and p["mapped"]]
+        silent = [p for p in params if p["fill_pct"] == 0]
+        never = [p for p in params if p["fill_pct"] is None]
+        full = [p for p in answered if p["fill_pct"] == 100]
+        partial = [p for p in answered if p["fill_pct"] < 100]
+        listing = lambda rows, n=4: ", ".join("%s (%d%%)" % (r["profile_name"], r["fill_pct"])
+                                              for r in rows[:n])
+        notes = []
+
+        if total:
+            notes.append(
+                "Across %s records the catalogue answers a median of %s%% of the profile "
+                "parameters that apply to each one — a mean of %s%%, from %d%% to %d%%."
+                % (format(total, ","), self._median(self.scores),
+                   round(sum(self.scores) / total, 1), min(self.scores), max(self.scores)))
+
+        notes.append(
+            "%d of the profile's %d parameters are answered by at least one record. %d are "
+            "answered by none, and %d are never even asked — their block is never instantiated, "
+            "or the draft never bound them."
+            % (len(answered), len(params), len(silent), len(never)))
+
+        if full:
+            notes.append(
+                "Answered every time they are asked: %s. These are identity and tuning — what a "
+                "catalogue exists to publish."
+                % ", ".join(p["profile_name"] for p in full))
+        if partial:
+            notes.append("Best covered after those: %s." % listing(partial, 3))
+            # Only the genuinely sparse ones — otherwise a parameter answered
+            # seven times in ten gets listed as thin next to one answered twice.
+            thin = sorted([p for p in partial if 0 < p["fill_pct"] < 50],
+                          key=lambda r: r["fill_pct"])[:3]
+            if thin:
+                notes.append(
+                    "Sparsest of the ones that do get answers: %s. The source has a column for "
+                    "each; on most pages it is empty." % listing(thin, 3))
+        if silent:
+            big = max(silent, key=lambda r: r["asked"])
+            notes.append(
+                "The %d silent parameters are the profile's control surface — gain, polarity, "
+                "mute, dynamics, EQ, clocking, radio state. %s is asked of %s records and "
+                "answered by none of them. A specification sheet describes what a microphone is; "
+                "X230 describes what a controller can do to it, and this is the width of the gap."
+                % (len(silent), big["profile_name"], format(big["asked"], ",")))
+        return notes
+
+    def result(self):
+        params = self._parameters()
+        buckets = []
+        for low in range(0, 100, 10):
+            count = sum(1 for s in self.scores if low <= s < low + 10 or (low == 90 and s == 100))
+            buckets.append({"label": "%d–%d%%" % (low, low + 9), "min": low, "max": low + 10,
+                            "count": count})
+        blocks = []
+        for spec in self.profile["blocks"]:
+            counts = self.per_block[spec["key"]]
+            blocks.append(dict(spec, **counts))
+        return {
+            "records": {"total": sum(self.kinds.values()), **self.kinds},
+            "score": {
+                "mean": round(sum(self.scores) / len(self.scores), 1) if self.scores else None,
+                "median": self._median(self.scores),
+                "min": min(self.scores) if self.scores else None,
+                "max": max(self.scores) if self.scores else None,
+                "histogram": buckets,
+            },
+            "blocks": blocks,
+            "parameters": params,
+            "notes": self._notes(params),
+        }

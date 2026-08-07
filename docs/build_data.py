@@ -271,10 +271,15 @@ def main():
     # part of the source dataset Research/microphone.schema.json describes.
     profile = x230.load(warnings.append)
     wordbook = x230_read.Wordbook()
+    x230_stats = None
     if profile:
         reader = x230_read.Reader(profile)
+        summary = x230_read.Summary(profile)
         for rec in mics + rf_records:
-            rec["x230"] = x230_read.compact(reader.read(rec), wordbook)
+            report = reader.read(rec)
+            summary.add(report)
+            rec["x230"] = x230_read.compact(report, wordbook)
+        x230_stats = summary.result()
 
     by_brand = defaultdict(list)
     for mic in mics:
@@ -374,6 +379,7 @@ def main():
     # It goes out last, carrying the wordbook the reports above index into.
     if profile:
         x230.write(OUT, profile, wordbook)
+        x230.write_report(OUT, x230_stats, warnings.append)
 
     config = build_config(mics, rf_records, warnings.append)
     config_path = os.path.join(OUT, "config.json")
@@ -389,6 +395,10 @@ def main():
     if profile:
         print("x230.json   %.0f KB / %d parameters" %
               (os.path.getsize(os.path.join(OUT, "x230.json")) / 1024, len(profile["parameters"])))
+        answered = sum(1 for p in x230_stats["parameters"] if p["mapped"])
+        print("x230_report %.0f KB / %d of %d parameters ever answered, median score %s%%" %
+              (os.path.getsize(os.path.join(OUT, "x230_report.json")) / 1024,
+               answered, len(x230_stats["parameters"]), x230_stats["score"]["median"]))
     print("brands/     %d files" % len(brands))
     for w in warnings:
         print("  warning: %s" % w)
