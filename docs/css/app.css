@@ -115,12 +115,8 @@ header {
   flex: none;
 }
 .brandmark { font-weight: 650; letter-spacing: -.01em; white-space: nowrap; }
-/* The emoji sits on its own baseline and ignores the weight around it, so it
-   is nudged rather than styled. Same character as icon.svg. */
-.logo {
-  font-size: 17px; line-height: 1; margin-right: 7px;
-  vertical-align: -2px; font-weight: 400;
-}
+/* The capsule mark, the same file the browser tab loads. */
+.logo { width: 22px; height: 22px; vertical-align: -5px; margin-right: 7px; }
 .brandmark small { display: block; font-weight: 400; font-size: 11px; color: var(--faint); letter-spacing: 0; }
 #search {
   flex: 1; max-width: 460px;
@@ -169,6 +165,35 @@ header {
   border-radius: 7px; padding: 6px 10px; cursor: pointer; font-size: 13px;
 }
 .iconbtn:hover { border-color: var(--accent); }
+
+/* ---------- install offer ----------
+   A bar along the bottom, shown once. It floats over the panes rather than
+   pushing them: the app is usable while it is up, and dismissing it must not
+   reflow what someone is reading. */
+.installbar {
+  position: fixed; z-index: 40; left: 50%; bottom: 14px;
+  transform: translate(-50%, 130%);
+  transition: transform .22s ease;
+  display: flex; align-items: center; gap: 12px;
+  width: min(560px, calc(100vw - 24px));
+  padding: 11px 14px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .28);
+}
+.installbar.up { transform: translate(-50%, 0); }
+.installbar .ibicon { flex: none; }
+.ibwords { flex: 1; min-width: 0; line-height: 1.35; }
+.ibwords b { display: block; font-size: 13.5px; }
+.ibwords span { font-size: 11.5px; color: var(--muted); }
+.ibacts { flex: none; display: flex; gap: 6px; }
+.ibacts .chip { padding: 5px 11px; font-size: 12px; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+@media (max-width: 520px) {
+  .installbar { flex-wrap: wrap; }
+  .ibacts { width: 100%; justify-content: flex-end; }
+}
 
 /* ---------- layout ---------- */
 main {

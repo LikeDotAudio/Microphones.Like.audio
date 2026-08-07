@@ -6,6 +6,7 @@ import { renderControls } from "./controls.js";
 import { loadIndex } from "./data.js";
 import { clearFilters } from "./filters.js";
 import { renderGallery } from "./gallery.js";
+import { initInstall } from "./install.js";
 import { renderModels } from "./models.js";
 import { renderPatternBar } from "./patterns.js";
 import { state } from "./state.js";
@@ -15,6 +16,9 @@ import { applyFilters, route } from "./views.js";
 
 /* ------------------------------------------------------------------- boot */
 async function boot() {
+  // Before the data: an install offer does not depend on it, and a failed
+  // fetch should still leave an installable app.
+  initInstall();
   try {
     await loadConfig();
     renderControls();
