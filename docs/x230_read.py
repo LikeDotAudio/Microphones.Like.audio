@@ -397,12 +397,17 @@ class Reader:
             states = [blocks[k] for k in owners if k in blocks]
             live = [s for s in states if s["status"] != "not-instantiated"]
 
-            if not oca["resolved"]:
-                row["status"] = "undefined-in-profile"
-                row["why"] = param.get("notes") or "The draft names this parameter but binds it to nothing."
-            elif owners and not live:
+            # A block the device does not have settles the question before the
+            # draft's own gaps do. R-F link test and external filter band are
+            # both unbound placeholders, but on a wired microphone that is beside
+            # the point — they belong out of scope, not in the report body under
+            # a Radio heading the device has no radio for.
+            if owners and not live:
                 row["status"] = "not-applicable"
                 row["why"] = states[0]["why"]
+            elif not oca["resolved"]:
+                row["status"] = "undefined-in-profile"
+                row["why"] = param.get("notes") or "The draft names this parameter but binds it to nothing."
 
             fn = table.get(param["key"])
             got = fn(rec) if fn else None
