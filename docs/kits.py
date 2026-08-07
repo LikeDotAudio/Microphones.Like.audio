@@ -93,13 +93,17 @@ def _quantity(entry):
 
 def _member_row(entry, part, qty):
     """What the page needs to show one line of the kit's contents."""
-    cls = part["classification"]
-    photo = part["media"].get("primary_photo") or {}
+    if not isinstance(part, dict):
+        part = {}
+    photo = (part.get("media") or {}).get("primary_photo") or {}
+    ident = part.get("identity") or {}
+    cls = part.get("classification") or {}
+    pricing = part.get("pricing") or {}
     return {
         "brand": part["source"]["brand_slug"],
         "slug": part["source"]["model_slug"],
-        "name": part["identity"].get("full_name") or entry.get("name"),
-        "model": part["identity"].get("model"),
+        "name": ident.get("full_name") or entry.get("name"),
+        "model": ident.get("model"),
         "subtitle": cls.get("subtitle") or entry.get("subtitle"),
         "quantity": qty,
         "type": cls.get("transducer_type") or "unknown",
