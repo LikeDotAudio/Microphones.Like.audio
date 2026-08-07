@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 
 import build_rf as rf
 import build_x230 as x230
+import kits
 import vocabulary as V
 import x230_read
 
@@ -53,13 +54,30 @@ def patterns_of(mic):
     return found
 
 
+def types_of(mic):
+    """Every transducer type a record answers to.
+
+    One for a microphone; for a kit, each type in the box plus "mixed" when
+    there is more than one — a drum pack has to reach both the Condenser chip
+    and the Dynamic one, because it genuinely contains both. The chip counts in
+    config.json are totalled the same way (see build_config), so the number on a
+    chip and the length of the list it produces agree.
+    """
+    kit = mic.get("kit")
+    base = mic["classification"].get("transducer_type") or "unknown"
+    if not kit or len(kit["types"]) < 2:
+        return [base]
+    return [base] + list(kit["types"])
+
+
 def model_row(mic):
     """The compact record the index carries for every microphone."""
     ident = mic["identity"]
     cls = mic["classification"]
     price = mic["pricing"]
     photo = mic["media"].get("primary_photo") or {}
-    return {
+    kit = mic.get("kit")
+    row = {
         "slug": mic["source"]["model_slug"],
         "model": ident.get("model"),
         "subtitle": cls.get("subtitle"),
@@ -75,6 +93,14 @@ def model_row(mic):
         "patterns": patterns_of(mic),
         "thumb": photo.get("thumb_url"),
     }
+    if kit:
+        # Enough for a card and the type filter; the contents themselves live in
+        # the brand file, which is what a click opens anyway.
+        row["kit"] = {"n": kit["mic_count"], "models": kit["model_count"],
+                      "types": kit["types"]}
+        if len(kit["types"]) > 1:
+            row["types"] = types_of(mic)
+    return row
 
 
 def build_config(mics, rf_records, warn):
@@ -84,7 +110,13 @@ def build_config(mics, rf_records, warn):
     ships with count 0 and the browser drops it, and any pattern name in the
     corpus that no button claims is reported rather than silently unreachable.
     """
-    types = Counter(m["classification"].get("transducer_type") or "unknown" for m in mics)
+    # A kit counts against every type in the box, exactly as js/filters.js
+    # matches it — a chip whose count disagreed with its own result list would
+    # be worse than no count at all.
+    types = Counter()
+    for m in mics:
+        for t in types_of(m):
+            types[t] += 1
     if rf_records:
         types["wireless"] = len(rf_records)
     forms = Counter(m["classification"].get("form_factor") for m in mics if m["classification"].get("form_factor"))
@@ -261,6 +293,14 @@ def main():
         mics = json.load(fh)
 
     warnings = []
+
+    # Before anything reads a record: a set has no specification of its own, so
+    # it borrows one from the microphones it contains. Done here rather than in
+    # the source dataset because it is derived — Research/microphones.json keeps
+    # saying only what the product page said. Everything downstream (the X230
+    # reading, the facet counts, the CSV) then sees a kit that knows what it is.
+    kit_stats = kits.apply(mics, warnings.append)
+
     rf_records = rf.load(warnings.append)
     rf_by_brand = rf.by_brand(rf_records)
 
@@ -388,6 +428,8 @@ def main():
         json.dump(config, fh, ensure_ascii=False, separators=(",", ":"))
 
     print("%d brands / %d microphones + %d RF systems" % (len(brands), len(mics), len(rf_records)))
+    print("kits        %d resolved (%d mixed-type), %d members unresolved"
+          % (kit_stats["kits"], kit_stats["mixed"], kit_stats["unresolved"]))
     print("config.json %.0f KB" % (os.path.getsize(config_path) / 1024))
     print("index.json  %.0f KB" % (os.path.getsize(index_path) / 1024))
     print("tags.json   %.0f KB / %d tags" % (os.path.getsize(tags_path) / 1024, len(tags)))

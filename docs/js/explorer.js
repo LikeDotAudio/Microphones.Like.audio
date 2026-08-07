@@ -8,6 +8,7 @@ import { countBy } from "./charts.js";
 import { exportCsv } from "./csv.js";
 import { go } from "./hash.js";
 import { patterns, patternByKey } from "./patterns.js";
+import { typePass, typesOf } from "./filters.js";
 
 const PAGE_ROWS = 250;
 
@@ -24,7 +25,7 @@ export function explorerRows() {
   const q = explorer.q.toLowerCase();
   const pat = explorer.pattern === "all" ? null : patternByKey(explorer.pattern);
   const rows = allModels().filter((r) => {
-    if (explorer.type !== "all" && (r.type || "unknown") !== explorer.type) return false;
+    if (!typePass(r, explorer.type)) return false;
     if (explorer.status !== "all" && r.avail !== explorer.status) return false;
     if (pat && !(pat.multi ? r.multi : (r.patterns || []).some((x) => pat.match.includes(x)))) return false;
     if (q && !((r.brand + " " + r.model + " " + (r.subtitle || "")).toLowerCase().includes(q))) return false;
@@ -72,8 +73,10 @@ export function buildExplorer() {
     return s;
   };
 
+  /* Counted over every type a row answers to, which is what the filter below
+     matches — so a kit of condensers and dynamics is in both tallies. */
   const typeOpts = [["all", "All types"]].concat(
-    countBy(allModels(), (r) => r.type || "unknown").map(([k, v]) => [k, cap(k) + " (" + v + ")"]));
+    countBy(allModels(), typesOf).map(([k, v]) => [k, cap(k) + " (" + v + ")"]));
   const patOpts = [["all", "All patterns"]].concat(
     patterns().map((p) => [p.key, p.label.replace(/ \(.*\)$/, "")]));
   const statusOpts = usable(cfg().availability).map((a) => [a.key, a.label]);

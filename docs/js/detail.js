@@ -1,6 +1,7 @@
 /* The right-hand pane: one microphone, rendered in full. */
 
 import { $, cap, el, has, num, money } from "./dom.js";
+import { kitTag, typeTag } from "./models.js";
 import { buildChain } from "./chain.js";
 import { cfg } from "./config.js";
 import { drawDetails, drawDiagram, drawLegend } from "./diagram.js";
@@ -22,9 +23,12 @@ export async function renderDetail() {
   host.innerHTML = "";
   host.appendChild(el("div", "empty", "Loading…"));
 
-  let mic;
+  let mic, bundle;
   try {
-    mic = (await loadBrand(state.brand))[state.model];
+    /* The whole brand file, not just this record: a kit draws the chain of each
+       microphone it contains, and those records are in here beside it. */
+    bundle = await loadBrand(state.brand);
+    mic = bundle[state.model];
   } catch (err) {
     host.innerHTML = "";
     host.appendChild(el("div", "empty", "Failed to load: " + err.message));
@@ -38,7 +42,7 @@ export async function renderDetail() {
   if (state.model !== mic.source.model_slug) return; // superseded by a newer click
   host.innerHTML = "";
   const isRf = mic.classification.kind === "rf";
-  host.appendChild(isRf ? buildRfDetail(mic) : buildDetail(mic));
+  host.appendChild(isRf ? buildRfDetail(mic) : buildDetail(mic, bundle));
   host.scrollTop = 0;
   $("detailSub").textContent = isRf
     ? mic.rf.range_count + " tuning range" + (mic.rf.range_count === 1 ? "" : "s")
@@ -55,6 +59,39 @@ function diagramSection(rec) {
     "Drawn from this record — a block only appears when the data calls for it."));
   wrap.appendChild(drawDetails(chain));
   return section("Signal chain", wrap);
+}
+
+/* A kit has no signal chain of its own — it has as many as it has microphones,
+   so each one is drawn from its own record rather than from the kit's inherited
+   summary. Two of the same microphone still get one drawing, headed with the
+   quantity: it is one chain, supplied twice. */
+function kitDiagrams(kit, bundle) {
+  const wrap = el("div");
+  let drawn = 0;
+  for (const m of kit.members) {
+    const rec = bundle && bundle[m.slug];
+    if (!rec) continue;                      // member outside this brand file
+    const chain = buildChain(rec);
+    if (!chain.blocks.length) continue;
+
+    const block = el("div", "dgblock kitchain");
+    const head = el("div", "kithead");
+    const name = el("button", "kitlink", (m.quantity > 1 ? m.quantity + " × " : "") +
+      (m.name || m.model || m.slug));
+    name.type = "button";
+    name.title = "Open " + (m.name || m.model);
+    name.addEventListener("click", () => go(m.brand, m.slug));
+    head.appendChild(name);
+    if (m.subtitle) head.appendChild(el("span", "sub", m.subtitle));
+    block.append(head, drawDiagram(chain), drawLegend(chain), drawDetails(chain));
+    wrap.appendChild(block);
+    drawn++;
+  }
+  if (!drawn) return null;
+  wrap.insertBefore(el("div", "note",
+    "One chain per microphone in the kit, each drawn from that microphone's own " +
+    "record — the kit itself has no capsule to describe."), wrap.firstChild);
+  return section(drawn === 1 ? "Signal chain" : "Signal chain of each microphone", wrap);
 }
 
 /* Wireless systems carry none of the microphone spec fields, so they get their
@@ -158,10 +195,11 @@ function linkWrap(url) {
   return a;
 }
 
-function buildDetail(mic) {
+function buildDetail(mic, bundle) {
   const root = el("div", "detail");
   const id = mic.identity, cls = mic.classification, spec = mic.specifications || {};
   const price = mic.pricing || {}, content = mic.content || {}, media = mic.media || {}, links = mic.links || {};
+  const kit = mic.kit || null;
 
   /* --- header + hero --- */
   root.appendChild(el("h1", null, id.full_name || id.model));
@@ -182,12 +220,13 @@ function buildDetail(mic) {
 
   const facts = el("div", "facts");
   const badges = el("div", "badges");
-  badges.appendChild(el("span", "tag type t-" + (cls.transducer_type || "unknown"), cap(cls.transducer_type || "unknown")));
+  badges.appendChild(typeTag(cls.transducer_type, cls.transducer_types));
   if (cls.form_factor) badges.appendChild(el("span", "tag", cls.form_factor));
   if (cls.is_tube) badges.appendChild(el("span", "tag", "Tube"));
   if (cls.is_multipattern) badges.appendChild(el("span", "tag", "Multipattern"));
   if (cls.is_stereo) badges.appendChild(el("span", "tag", "Stereo"));
-  if (cls.product_type === "set") badges.appendChild(el("span", "tag", "Set"));
+  if (kit) badges.appendChild(kitTag({ n: kit.mic_count, models: kit.model_count }));
+  else if (cls.product_type === "set") badges.appendChild(el("span", "tag", "Set"));
   if (price.availability === "discontinued") badges.appendChild(el("span", "tag disc", "Discontinued"));
   (cls.pattern_icons || []).forEach((p) => badges.appendChild(el("span", "tag", p)));
   facts.appendChild(badges);
@@ -227,7 +266,7 @@ function buildDetail(mic) {
   }
 
   /* --- signal chain --- */
-  const diagram = diagramSection(mic);
+  const diagram = (kit && kitDiagrams(kit, bundle)) || diagramSection(mic);
   if (diagram) root.appendChild(diagram);
 
   /* --- pickup patterns --- */
@@ -345,10 +384,28 @@ function buildDetail(mic) {
     root.appendChild(section("Frequency response", wrap));
   }
 
-  /* --- set contents --- */
+  /* --- kit contents ---
+     The microphones first, because they are what the kit is; the case and the
+     clamps after. Each card opens that microphone's own record, where the specs
+     this page inherited came from. */
   if (mic.set) {
     const wrap = el("div");
-    if (has(mic.set.included_microphones)) {
+    if (kit && has(kit.members)) {
+      const rel = el("div", "rel");
+      for (const m of kit.members) rel.appendChild(kitCard(m));
+      wrap.appendChild(rel);
+      const sum = dl([
+        ["Microphones", kit.mic_count + " in " + kit.model_count +
+          (kit.model_count === 1 ? " model" : " models")],
+        ["Bought separately", kit.parts_msrp != null ? money(kit.parts_msrp) : null],
+        ["Kit price", price.msrp_amount != null ? money(price.msrp_amount) : null],
+        ["Difference", kit.parts_msrp != null && price.msrp_amount != null
+          ? (price.msrp_amount <= kit.parts_msrp ? "−" : "+") +
+            money(Math.abs(price.msrp_amount - kit.parts_msrp)) +
+            " against the parts" : null],
+      ]);
+      if (sum) { sum.style.marginTop = "10px"; wrap.appendChild(sum); }
+    } else if (has(mic.set.included_microphones)) {
       const rel = el("div", "rel");
       for (const m of mic.set.included_microphones) rel.appendChild(relCard(m, m.quantity_in_set));
       wrap.appendChild(rel);
@@ -356,7 +413,16 @@ function buildDetail(mic) {
     const acc = mic.set.included_accessories || {};
     const accList = dl(Object.entries(acc).map(([k, v]) => [k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()), v]));
     if (accList) { accList.style.marginTop = "10px"; wrap.appendChild(accList); }
-    if (wrap.children.length) root.appendChild(section("Included in this set", wrap));
+    if (kit) {
+      wrap.appendChild(el("div", "note",
+        "This kit has no specification of its own. Everything above — type, " +
+        "patterns, tags and specs — is inherited from these microphones, and " +
+        "only where every one of them agrees (" + kit.inherited.length +
+        " fields filled in this way)."));
+    }
+    if (wrap.children.length) {
+      root.appendChild(section(kit ? "Microphones in this kit" : "Included in this set", wrap));
+    }
   }
 
   /* --- quotes --- */
@@ -433,6 +499,29 @@ function buildDetail(mic) {
 
   root.appendChild(x230Section(mic));
   return root;
+}
+
+/* One microphone of a kit: how many, what it is, and a way into its record.
+   Unlike relCard it navigates by (brand, slug) rather than by parsing a
+   permalink — the build already resolved which record this is. */
+function kitCard(m) {
+  const card = el("div", "rel-item");
+  if (m.thumb) {
+    const img = el("img");
+    img.loading = "lazy";
+    img.src = m.thumb;
+    img.alt = "";
+    img.addEventListener("error", () => img.remove());
+    card.appendChild(img);
+  }
+  const n = el("div", "n", (m.quantity > 1 ? m.quantity + " × " : "") + (m.name || m.model || m.slug));
+  if (m.subtitle) n.appendChild(el("span", null, m.subtitle));
+  card.appendChild(n);
+  card.appendChild(el("span", "dot t-" + (m.type || "unknown")));
+  card.title = [m.name, m.msrp != null ? money(m.msrp) + " each" : null]
+    .filter(Boolean).join(" · ");
+  card.addEventListener("click", () => go(m.brand, m.slug));
+  return card;
 }
 
 function relCard(item, qty) {

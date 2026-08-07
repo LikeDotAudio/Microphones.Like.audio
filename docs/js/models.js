@@ -6,6 +6,28 @@ import { visibleModels } from "./filters.js";
 import { go } from "./hash.js";
 import { state } from "./state.js";
 
+/* The transducer chip. A kit of one type reads as that type; a mixed kit names
+   what is in the box — "Condenser + Dynamic" — rather than hiding three
+   microphones behind the word "mixed". `types` is the kit's list, absent on a
+   microphone. */
+export function typeTag(type, types) {
+  const key = type || "unknown";
+  const label = key === "mixed" && types && types.length
+    ? types.map(cap).join(" + ")
+    : cap(key);
+  return el("span", "tag type t-" + key, label);
+}
+
+/* "4-mic kit" — the count is what distinguishes a stereo pair from a drum pack
+   at a glance, and it is the number the kit's own subtitle keeps saying. */
+export function kitTag(kit) {
+  const chip = el("span", "tag kit", kit.n + "-mic kit");
+  chip.title = kit.n + " microphones" +
+    (kit.models > 1 ? " across " + kit.models + " models" : " of one model") +
+    " — the type, patterns and specs shown are inherited from them";
+  return chip;
+}
+
 export function modelCard(m, brand, showBrand) {
   const card = el("div", "card");
   card.dataset.slug = m.slug;
@@ -27,13 +49,14 @@ export function modelCard(m, brand, showBrand) {
   if (m.subtitle) info.appendChild(el("div", "desc", m.subtitle));
 
   const meta = el("div", "meta");
-  meta.appendChild(el("span", "tag type t-" + (m.type || "unknown"), cap(m.type || "unknown")));
+  meta.appendChild(typeTag(m.type, m.kit && m.kit.types));
   if (m.msrp != null) meta.appendChild(el("span", "tag price", money(m.msrp)));
   if (m.avail === "discontinued") meta.appendChild(el("span", "tag disc", "Discontinued"));
   if (m.tube) meta.appendChild(el("span", "tag", "Tube"));
   if (m.multi) meta.appendChild(el("span", "tag", "Multipattern"));
   if (m.stereo) meta.appendChild(el("span", "tag", "Stereo"));
-  if (m.set) meta.appendChild(el("span", "tag", "Set"));
+  if (m.kit) meta.appendChild(kitTag(m.kit));
+  else if (m.set) meta.appendChild(el("span", "tag", "Set"));
   if (m.year) meta.appendChild(el("span", "tag", String(m.year)));
   /* How much of the AES-X230 profile this record can fill in. Banded by tenths
      so the colour reads as "how well documented" without needing a legend. */

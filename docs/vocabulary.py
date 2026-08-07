@@ -15,7 +15,14 @@ the data can never satisfy.
 # ---------------------------------------------------------------- facets
 
 # Transducer types, in the order the chips appear. `key` is the value stored in
-# a model row; None is the catch-all chip.
+# a model row.
+#
+# "mixed" is a kit whose microphones are not all of one type — a drum pack of
+# dynamics and condensers. Such a kit also answers to each type it contains, so
+# it appears under Condenser and Dynamic as well as here (docs/kits.py).
+# "unclassified" is left in place although nothing carries it: every record that
+# once did was a kit, and the chip should return the moment the corpus grows a
+# record that genuinely has no type.
 TYPES = [
     {"key": "all", "label": "All"},
     {"key": "condenser", "label": "Condenser"},
@@ -23,6 +30,7 @@ TYPES = [
     {"key": "ribbon", "label": "Ribbon"},
     {"key": "boundary", "label": "Boundary"},
     {"key": "hybrid", "label": "Hybrid"},
+    {"key": "mixed", "label": "Mixed kit"},
     {"key": "wireless", "label": "Wireless"},
     {"key": "unknown", "label": "Unclassified"},
 ]
@@ -275,6 +283,7 @@ TYPE_COLORS = {
     "boundary": "var(--s4)",
     "hybrid": "var(--s5)",
     "wireless": "var(--s6)",
+    "mixed": "var(--s7)",
     "unknown": "var(--faint)",
 }
 
@@ -295,7 +304,7 @@ STAT_ATTRIBUTES = [
     {"label": "Tube", "field": "tube"},
     {"label": "Multipattern", "field": "multi"},
     {"label": "Stereo", "field": "stereo"},
-    {"label": "Sold as a set", "field": "set"},
+    {"label": "Sold as a kit", "field": "set"},
     {"label": "Has MSRP", "field": "msrp", "present": True},
     {"label": "Currently sold", "field": "avail", "equals": "current"},
 ]
@@ -344,6 +353,12 @@ CSV_COLUMNS = [
     {"label": "Subtitle", "path": "classification.subtitle"},
     {"label": "Product type", "path": "classification.product_type"},
     {"label": "Transducer type", "path": "classification.transducer_type"},
+    {"label": "Kit: microphones", "path": "kit.mic_count"},
+    {"label": "Kit: models", "path": "kit.members", "kind": "list", "field": "name"},
+    {"label": "Kit: quantities", "path": "kit.members", "kind": "list", "field": "quantity"},
+    {"label": "Kit: types", "path": "kit.types", "kind": "list"},
+    {"label": "Kit: parts MSRP", "path": "kit.parts_msrp"},
+    {"label": "Kit: inherited fields", "path": "kit.inherited", "kind": "list"},
     {"label": "Form factor", "path": "classification.form_factor"},
     {"label": "Tube", "path": "classification.is_tube", "kind": "bool"},
     {"label": "Multipattern", "path": "classification.is_multipattern", "kind": "bool"},

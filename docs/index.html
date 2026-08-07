@@ -10,6 +10,17 @@
   columns — is built at runtime from data/config.json. There is no vocabulary
   and no microphone data in this file; see docs/vocabulary.py for the source.
 -->
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<!-- Installable as an app: the manifest names it, sizes it and colours its
+     splash; js/install.js offers the prompt and registers sw.js. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#f9f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14110d" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Microphones">
 <link rel="stylesheet" href="css/app.css">
 <script src="js/theme.js"></script>
 <script type="module" src="js/main.js"></script>
@@ -17,7 +28,8 @@
 <body>
 
 <header>
-  <div class="brandmark">Microphones.Like.Audio</div>
+  <!-- The tab icon and the logo are one mark; see docs/build_logo.py. -->
+  <div class="brandmark"><img class="logo" src="icon.svg" alt="" width="22" height="22">Microphones.Like.Audio</div>
   <nav class="nav">
     <a class="navlink" id="navBrowse" href="#/">Browse</a>
     <a class="navlink" id="navGallery" href="#/gallery">Gallery</a>
@@ -29,6 +41,8 @@
   <input id="search" type="search" placeholder="Search brands and models…" autocomplete="off" spellcheck="false">
   <div class="spacer"></div>
   <div class="stat" id="stat"></div>
+  <!-- Unhidden by js/install.js, and only where installing is actually on offer. -->
+  <button class="iconbtn" id="install" title="Install as an app" hidden>Install</button>
   <button class="iconbtn" id="theme" title="Toggle theme">◐</button>
 </header>
 

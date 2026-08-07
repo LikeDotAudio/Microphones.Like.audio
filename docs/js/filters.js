@@ -9,6 +9,14 @@ import { state } from "./state.js";
 
 export const micKey = (m, brand) => brand.slug + "/" + m.slug;
 
+/* Every transducer type a row answers to. A microphone has one; a kit is a box,
+   so it answers to each type inside it as well as to its own "mixed" — a drum
+   pack of dynamics and condensers belongs under both chips. docs/build_data.py
+   totals the chip counts the same way, so a count always matches its list. */
+export const typesOf = (m) => m.types || [m.type || "unknown"];
+
+export const typePass = (m, key) => key === "all" || typesOf(m).includes(key);
+
 export const textPass = (m) => {
   const q = state.query;
   return !q ||
@@ -44,7 +52,7 @@ export function x230Pass(m) {
 
 /* Everything the facet controls ask of a model, AND-ed together. */
 export function facetPass(m, brand) {
-  if (state.type !== "all" && (m.type || "unknown") !== state.type) return false;
+  if (!typePass(m, state.type)) return false;
   if (state.form !== "all" && m.form !== state.form) return false;
   if (state.currentOnly && m.avail !== "current") return false;
   for (const t of state.traits) if (!m[t]) return false;
