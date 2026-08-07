@@ -1,18 +1,26 @@
-/* Microphone Browser — all page styles.
-   Loaded by index.html; the markup carries no <style> block of its own. */
+/* Microphones.Like.Audio — all page styles.
+   Loaded by index.html; the markup carries no <style> block of its own.
+
+   The house colour is #f4902c (R244 G144 B44). It drives --accent: every
+   divider, rule and highlight is a step of that hue. Two companions keep it
+   readable: --accent-ink is what sits on top of a filled accent surface, and
+   --accent-text is the darkened step used when the accent has to be small
+   text on the page background — #f4902c itself is far too light there. */
 
 :root {
-  --bg: #f6f7f9;
+  --bg: #f9f6f2;
   --panel: #ffffff;
-  --panel-2: #fbfbfd;
-  --border: #e0e3e9;
-  --border-soft: #eceef3;
-  --text: #14171c;
-  --muted: #666f7d;
-  --faint: #949cab;
-  --accent: #2f6df6;
-  --accent-soft: #e8effe;
-  --chip: #eef0f4;
+  --panel-2: #fdf9f4;
+  --border: #ecd6bc;
+  --border-soft: #f5e7d7;
+  --text: #1c1710;
+  --muted: #756853;
+  --faint: #a3937c;
+  --accent: #f4902c;
+  --accent-text: #a35505;
+  --accent-ink: #22160a;
+  --accent-soft: #fdeada;
+  --chip: #f4ece2;
   --shadow: 0 1px 2px rgba(16, 22, 34, .06);
   /* Categorical series, fixed slot order — validated for CVD separation
      against this surface. Never cycled, never reassigned by rank. */
@@ -22,24 +30,26 @@
   --s4: #eda100;  /* other     */
   --s5: #e87ba4;  /* hybrid    */
   --s6: #7c5cd6;  /* wireless  */
-  --grid: #e6e9ef;
+  --grid: #f0dcc4;
 }
 :root:not([data-theme="light"]) {
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #101215;
-    --panel: #171a1f;
-    --panel-2: #1c2026;
-    --border: #2a2f38;
-    --border-soft: #23272e;
-    --text: #e6e9ee;
-    --muted: #99a2b0;
-    --faint: #6d7684;
-    --accent: #6f9cff;
-    --accent-soft: #1d2a44;
-    --chip: #232830;
+    --bg: #14110d;
+    --panel: #1b1712;
+    --panel-2: #211c15;
+    --border: #3d2e1d;
+    --border-soft: #2c2318;
+    --text: #efe7dc;
+    --muted: #a8977f;
+    --faint: #7a6a55;
+    --accent: #f4902c;
+    --accent-text: #f4902c;
+    --accent-ink: #22160a;
+    --accent-soft: #3a2611;
+    --chip: #2a231a;
     --shadow: none;
     /* Same hues, re-stepped for the dark surface — not an automatic flip. */
     --s1: #3987e5;
@@ -48,22 +58,24 @@
     --s4: #c98500;
     --s5: #d55181;
     --s6: #8f74e0;
-    --grid: #262b33;
+    --grid: #33281a;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #101215;
-  --panel: #171a1f;
-  --panel-2: #1c2026;
-  --border: #2a2f38;
-  --border-soft: #23272e;
-  --text: #e6e9ee;
-  --muted: #99a2b0;
-  --faint: #6d7684;
-  --accent: #6f9cff;
-  --accent-soft: #1d2a44;
-  --chip: #232830;
+  --bg: #14110d;
+  --panel: #1b1712;
+  --panel-2: #211c15;
+  --border: #3d2e1d;
+  --border-soft: #2c2318;
+  --text: #efe7dc;
+  --muted: #a8977f;
+  --faint: #7a6a55;
+  --accent: #f4902c;
+  --accent-text: #f4902c;
+  --accent-ink: #22160a;
+  --accent-soft: #3a2611;
+  --chip: #2a231a;
   --shadow: none;
   --s1: #3987e5;
   --s2: #d95926;
@@ -71,7 +83,7 @@
   --s4: #c98500;
   --s5: #d55181;
   --s6: #8f74e0;
-  --grid: #262b33;
+  --grid: #33281a;
 }
 
 * { box-sizing: border-box; }
@@ -87,7 +99,7 @@ body {
   flex-direction: column;
   overflow: hidden;
 }
-a { color: var(--accent); text-decoration: none; }
+a { color: var(--accent-text); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button { font: inherit; color: inherit; }
 
@@ -116,7 +128,7 @@ header {
   color: var(--muted); text-decoration: none; white-space: nowrap;
 }
 .navlink:hover { background: var(--panel-2); color: var(--text); text-decoration: none; }
-.navlink.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.navlink.on { background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
 
 .patbar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 .pat {
@@ -126,7 +138,7 @@ header {
   border-radius: 7px; cursor: pointer; color: var(--muted);
 }
 .pat:hover { border-color: var(--accent); color: var(--text); }
-.pat.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pat.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .pat svg { width: 21px; height: 21px; display: block; }
 .pat svg .fillp { fill: currentColor; opacity: .8; }
 .pat svg .strokep { fill: none; stroke: currentColor; stroke-width: 1.4; opacity: .8; }
@@ -216,7 +228,7 @@ main {
   border-radius: 999px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; color: var(--muted);
 }
 .chip:hover { border-color: var(--accent); }
-.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .chip.clear { border-style: dashed; }
 .filters select {
   font-size: 11.5px; padding: 3px 6px;
@@ -358,15 +370,15 @@ details.rawdump > summary { cursor: pointer; color: var(--muted); font-size: 12.
   background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
 }
 .tagcell:hover { border-color: var(--accent); }
-.tagcell.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tagcell.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .tagcell .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tagcell .c { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
-.tagcell.on .c { color: #fff; opacity: .85; }
+.tagcell.on .c { color: var(--accent-ink); opacity: .75; }
 .tagcell .bar {
   position: absolute; left: 0; bottom: 0; height: 2px; background: var(--accent); opacity: .35;
 }
 .tagcell { position: relative; overflow: hidden; }
-.tagcell.on .bar { background: #fff; opacity: .5; }
+.tagcell.on .bar { background: var(--accent-ink); opacity: .35; }
 
 /* ---------- gallery ----------
    One block per manufacturer, each a grid of photos, packed as tightly as the
@@ -446,7 +458,7 @@ figure.fig .note { font-size: 11.5px; color: var(--faint); margin-bottom: 12px; 
 .row { display: grid; grid-template-columns: var(--labelw, 122px) 1fr auto; gap: 10px; align-items: center; }
 .row .rl { font-size: 12.5px; color: var(--muted); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row .rl.link { cursor: pointer; }
-.row .rl.link:hover { color: var(--accent); }
+.row .rl.link:hover { color: var(--accent-text); }
 .track { height: 15px; display: flex; gap: 2px; background: var(--grid); border-radius: 0 4px 4px 0; overflow: hidden; }
 .track > b { display: block; height: 100%; min-width: 1px; }
 .track > b:last-child { border-radius: 0 4px 4px 0; }
@@ -478,7 +490,7 @@ table.data th {
   font-weight: 600; color: var(--muted);
 }
 table.data th:hover { color: var(--text); }
-table.data th .ind { color: var(--accent); }
+table.data th .ind { color: var(--accent-text); }
 table.data td { border-bottom: 1px solid var(--border-soft); padding: 6px 10px; white-space: nowrap; }
 table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
 table.data td.wrap { white-space: normal; min-width: 180px; }
@@ -702,7 +714,7 @@ td.dim { color: var(--faint); }
 .s-runtime > .x230st, .tag.x230st.s-runtime { color: var(--x-run); }
 .x230val { margin-top: 2px; font-size: 12.5px; }
 .x230val.nul { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--faint); font-size: 11.5px; }
-.x230bind { margin-top: 3px; font-size: 10.5px; color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.x230bind { margin-top: 3px; font-size: 10.5px; color: var(--accent-text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .x230acc { font-size: 10.5px; color: var(--muted); }
 .x230why { margin-top: 3px; font-size: 11px; color: var(--faint); line-height: 1.45; }
 .tag.x230blk.b-instantiated { color: var(--x-map); }

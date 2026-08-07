@@ -45,6 +45,10 @@ Research/aes_x230_profile.schema.json    the X230 data model, as a schema
 Research/aes_x230_device.schema.json     one device read against the profile
 
 docs/index.html          the browser app — no dependencies, no build step
+docs/css/app.css         every style; the markup carries no <style> of its own
+docs/js/                 ES modules, one job each — the brand tree, the model
+                         list, the device page, the signal chain and its
+                         drawing, gallery, tags, wireless, statistics, X230
 docs/vocabulary.py       every facet, chip, column and band the UI offers
 docs/build_data.py       splits the dataset into the files the app fetches
 docs/build_rf.py         normalises the wireless dataset
@@ -105,8 +109,10 @@ the source's bandwidth bill is the reason not to.
 
 ## Browse
 
-Three panes: brands on the left, that brand's models in the middle, the selected
-model in full on the right.
+Three panes under one filter bar: brands on the left, that brand's models in the
+middle, the selected model in full on the right. The bar spans the top rather
+than living in the model pane, because those facets narrow the brand tree as
+much as the list.
 
 - `/` focuses search; it filters brands and models together.
 - The buttons beside the search box filter the whole catalogue — cardioid, omni,
@@ -122,10 +128,65 @@ those into one "9 polar patterns" icon, so `build_data.py` unions it with the
 per-pattern spec rows. A C 414 XL II therefore answers to Cardioid, Omni,
 Hypercardioid, Figure-8 and Wide alike.
 
+On a narrow screen the panes stack and the model list drops out: the brand tree
+already folds out to models and routes straight to the device, so a second list
+of the same rows only costs screen. The header stacks with it — search takes a
+row of its own, and the pattern buttons and filter chips become strips that
+scroll sideways rather than wrapping into columns tall enough to push the panes
+off the page. A wide window is used rather than padded: the device pane has no
+column cap, and only running prose keeps a measure.
+
+## Gallery
+
+Every model as a picture, grouped by manufacturer and ordered naturally within
+one (C 414 before C 3000), with a filter box over brand and model names. Browse
+answers what is known about a microphone; this answers what it looks like.
+
+It reads `index.json`, already in memory from boot, so the view costs no
+request, and it draws the whole catalogue in one pass — a "show more" button in
+the middle of a gallery is a wall. The photos are the only cost, and the browser
+fetches each one lazily as the grid scrolls it into view.
+
+## The signal chain
+
+Every device page draws its own chain, in the manner of the X230 typical
+block-diagram sheets: boxes left to right, feeds arriving from below, a terminal
+label where the signal leaves. The blocks and their order are config
+(`vocabulary.MIC_CHAIN` / `RF_CHAIN`); whether a block appears at all is decided
+by an extractor reading the record, which is what makes each drawing specific —
+a mic with no pad gets no attenuator, and a passive ribbon gets no preamp,
+because drawing one would be a lie.
+
+Under the drawing is the table that makes it worth having: every box, what it
+shows, and the record fields it was built from. No box appears that cannot be
+pointed back at data.
+
+Two kinds of record need more than one row of boxes, and some need both:
+
+| Case | Records | Drawn as |
+|---|---|---|
+| **Stereo** — `classification.is_stereo` | 138 | two paths meeting at the connector, LEFT/RIGHT — or MID/SIDE when mid-side is the only array pattern, since calling those two paths left and right would misname them |
+| **Dual-diaphragm** — omni *and* figure-8 among the element patterns, or three or more of them | 240 | front and rear elements feeding a **pattern matrix** |
+| **Both** — e.g. the Josephson C700S | 14 | each channel with its own pair of diaphragms and its own matrix |
+
+The dual-diaphragm rule is physics, not a tag lookup: no single element hears
+both omnidirectionally and in a figure-8, so a mic offering the pair has two
+diaphragms being summed with variable polarity, and that summing is the matrix.
+Three or more selectable element patterns says the same thing the long way
+round, and catches the omni/cardioid/figure-8 classic.
+
+Patterns that describe how a *pair* is combined — X/Y, mid-side, Blumlein,
+binaural — belong to the array rather than to a diaphragm, so they are cited
+against the stereo split instead of being printed inside each capsule.
+
+The drawing scales down to fit the pane rather than scrolling, but only to about
+three quarters: past that the captions stop being legible and a scrollbar is the
+better answer.
+
 ## The X230 reading
 
 Every record is read against the profile at build time (`docs/x230_read.py`) and
-each parameter lands in one of five states:
+each parameter lands in one of six states:
 
 | State | Meaning |
 |---|---|
