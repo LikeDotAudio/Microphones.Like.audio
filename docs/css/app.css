@@ -268,11 +268,16 @@ main {
 .frow { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .frow .push { margin-left: auto; }
 .chip {
+  display: inline-flex; align-items: center; gap: 5px;
   border: 1px solid var(--border); background: var(--panel-2);
   border-radius: 999px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; color: var(--muted);
 }
-.chip:hover { border-color: var(--accent); }
+.chip svg { width: 14px; height: 14px; display: block; flex: none; }
+.chip svg .fillp { fill: currentColor; opacity: .8; }
+.chip svg .strokep { fill: none; stroke: currentColor; stroke-width: 1.5; opacity: .8; }
+.chip:hover { border-color: var(--accent); color: var(--text); }
 .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip.on svg .fillp, .chip.on svg .strokep { opacity: 1; }
 .chip.clear { border-style: dashed; }
 .filters select {
   font-size: 11.5px; padding: 3px 6px;

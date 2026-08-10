@@ -6,12 +6,20 @@
 
 import { $, el, fillSelect } from "./dom.js";
 import { cfg, usable } from "./config.js";
+import { iconSvg } from "./polar.js";
 
-function chip(attr, key, label, count) {
-  const b = el("button", "chip", label);
+function chip(attr, key, label, count, icon, glyph) {
+  const b = el("button", "chip");
   b.type = "button";
   b.dataset[attr] = key;
-  if (count != null) b.title = count.toLocaleString() + " microphones";
+  if (count != null) b.title = label + " · " + count.toLocaleString() + " microphones";
+  else b.title = label;
+
+  if (icon || glyph) {
+    b.innerHTML = iconSvg(icon, glyph) + "<span>" + label + "</span>";
+  } else {
+    b.textContent = label;
+  }
   return b;
 }
 
@@ -21,7 +29,7 @@ export function renderControls() {
   const row1 = $("frowType");
   row1.innerHTML = "";
   for (const t of usable(c.types)) {
-    row1.appendChild(chip("type", t.key, t.label, t.count));
+    row1.appendChild(chip("type", t.key, t.label, t.count, t.icon, t.glyph));
   }
   const form = el("select", "push");
   form.id = "form";
@@ -48,7 +56,7 @@ export function renderControls() {
   fillSelect(x230, usable(c.x230Bands), { showCounts: true });
 
   for (const t of usable(c.traits)) {
-    row2.appendChild(chip("trait", t.key, t.label, t.count));
+    row2.appendChild(chip("trait", t.key, t.label, t.count, t.icon, t.glyph));
   }
   const current = c.availability.find((a) => a.key === "current");
   if (current && current.count) {

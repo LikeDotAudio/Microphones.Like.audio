@@ -34,11 +34,59 @@ export function polarPath(r, opt) {
    wireless system carries a radio, not a capsule, so there is no curve to plot.
    Those name a glyph in config instead of a set of curves. */
 export const GLYPHS = {
+  all:
+    '<circle class="fillp" cx="8" cy="8" r="2.4"/>' +
+    '<circle class="fillp" cx="16" cy="8" r="2.4"/>' +
+    '<circle class="fillp" cx="8" cy="16" r="2.4"/>' +
+    '<circle class="fillp" cx="16" cy="16" r="2.4"/>',
+  condenser:
+    '<circle class="strokep" cx="12" cy="12" r="8.5"/>' +
+    '<line class="strokep" x1="9" y1="8" x2="9" y2="16"/>' +
+    '<line class="strokep" x1="15" y1="8" x2="15" y2="16"/>' +
+    '<line class="strokep" x1="4" y1="12" x2="9" y2="12"/>' +
+    '<line class="strokep" x1="15" y1="12" x2="20" y2="12"/>',
+  dynamic:
+    '<circle class="strokep" cx="12" cy="12" r="8.5"/>' +
+    '<path class="strokep" d="M8 9.5h8M8 12h8M8 14.5h8"/>' +
+    '<line class="strokep" x1="12" y1="3.5" x2="12" y2="8"/>' +
+    '<line class="strokep" x1="12" y1="16" x2="12" y2="20.5"/>',
+  ribbon:
+    '<rect class="fillp" x="4.5" y="6" width="3.5" height="12" rx="1"/>' +
+    '<rect class="fillp" x="16" y="6" width="3.5" height="12" rx="1"/>' +
+    '<path class="strokep" d="M12 5.5v13M12 7.5l-1.5 2 3 2-3 2 3 2-1.5 2"/>',
+  boundary:
+    '<line class="strokep" x1="3" y1="18.5" x2="21" y2="18.5"/>' +
+    '<path class="strokep" d="M6.5 18.5a5.5 5.5 0 0 1 11 0"/>' +
+    '<circle class="fillp" cx="12" cy="15" r="1.5"/>',
+  hybrid:
+    '<circle class="strokep" cx="9" cy="12" r="6"/>' +
+    '<circle class="strokep" cx="15" cy="12" r="6"/>' +
+    '<line class="strokep" x1="9" y1="9" x2="9" y2="15"/>',
+  mixed:
+    '<rect class="strokep" x="4" y="8.5" width="16" height="11" rx="2"/>' +
+    '<path class="strokep" d="M9.5 8.5V6a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2.5"/>' +
+    '<circle class="fillp" cx="9" cy="14" r="1.5"/>' +
+    '<circle class="fillp" cx="15" cy="14" r="1.5"/>',
+  wireless:
+    '<path class="strokep" d="M5.5 9.2a9 9 0 0 1 13 0"/>' +
+    '<path class="strokep" d="M8.4 11.4a5.2 5.2 0 0 1 7.2 0"/>' +
+    '<circle class="fillp" cx="12" cy="13.2" r="1.7"/>' +
+    '<path class="strokep" d="M12 13.2V21"/>',
   antenna:
     '<path class="strokep" d="M5.5 9.2a9 9 0 0 1 13 0"/>' +
     '<path class="strokep" d="M8.4 11.4a5.2 5.2 0 0 1 7.2 0"/>' +
     '<circle class="fillp" cx="12" cy="13.2" r="1.7"/>' +
     '<path class="strokep" d="M12 13.2V21"/>',
+  unknown:
+    '<circle class="strokep" cx="12" cy="12" r="8.5"/>' +
+    '<path class="strokep" d="M9.8 9.8a2.5 2.5 0 0 1 4.4 1.4c0 1.5-2.2 2-2.2 3.3"/>' +
+    '<circle class="fillp" cx="12" cy="17" r="1"/>',
+  tube:
+    '<path class="strokep" d="M8 19V9.5a4 4 0 0 1 8 0V19"/>' +
+    '<line class="strokep" x1="6" y1="19" x2="18" y2="19"/>' +
+    '<line class="strokep" x1="10" y1="19" x2="10" y2="21.5"/>' +
+    '<line class="strokep" x1="14" y1="19" x2="14" y2="21.5"/>' +
+    '<path class="strokep" d="M10 13h4M12 10.5v5"/>',
 };
 
 /* `curves` comes straight from config: [{shape, rot, scale, stroke}, …], or a

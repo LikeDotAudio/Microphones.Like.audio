@@ -24,15 +24,15 @@ the data can never satisfy.
 # once did was a kit, and the chip should return the moment the corpus grows a
 # record that genuinely has no type.
 TYPES = [
-    {"key": "all", "label": "All"},
-    {"key": "condenser", "label": "Condenser"},
-    {"key": "dynamic", "label": "Dynamic"},
-    {"key": "ribbon", "label": "Ribbon"},
-    {"key": "boundary", "label": "Boundary"},
-    {"key": "hybrid", "label": "Hybrid"},
-    {"key": "mixed", "label": "Mixed kit"},
-    {"key": "wireless", "label": "Wireless"},
-    {"key": "unknown", "label": "Unclassified"},
+    {"key": "all", "label": "All", "glyph": "all"},
+    {"key": "condenser", "label": "Condenser", "glyph": "condenser"},
+    {"key": "dynamic", "label": "Dynamic", "glyph": "dynamic"},
+    {"key": "ribbon", "label": "Ribbon", "glyph": "ribbon"},
+    {"key": "boundary", "label": "Boundary", "glyph": "boundary"},
+    {"key": "hybrid", "label": "Hybrid", "glyph": "hybrid"},
+    {"key": "mixed", "label": "Mixed kit", "glyph": "mixed"},
+    {"key": "wireless", "label": "Wireless", "glyph": "wireless"},
+    {"key": "unknown", "label": "Unclassified", "glyph": "unknown"},
 ]
 
 # What a catalogue entry is. Microphones and RF systems keep separate record
@@ -56,9 +56,13 @@ FORM_LABELS = {
 
 # Boolean columns on a model row that read well as a toggle.
 TRAITS = [
-    {"key": "tube", "label": "Tube"},
-    {"key": "multi", "label": "Multipattern"},
-    {"key": "stereo", "label": "Stereo"},
+    {"key": "tube", "label": "Tube", "glyph": "tube"},
+    {"key": "multi", "label": "Multipattern",
+     "icon": [{"shape": "cardioid", "scale": 0.66},
+              {"shape": "omni", "scale": 0.95, "stroke": True}]},
+    {"key": "stereo", "label": "Stereo",
+     "icon": [{"shape": "cardioid", "rot": -0.75, "scale": 0.8},
+              {"shape": "cardioid", "rot": 0.75, "scale": 0.8}]},
 ]
 
 # MSRP bands, [min, max) in dollars. `none` selects mics with no listed price.
