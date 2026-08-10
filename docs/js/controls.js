@@ -60,7 +60,7 @@ export function renderControls() {
   }
   const current = c.availability.find((a) => a.key === "current");
   if (current && current.count) {
-    row2.appendChild(chip("avail", "current", current.label, current.count));
+    row2.appendChild(chip("avail", "current", current.label, current.count, null, "current"));
   }
 
   const tagChip = el("button", "chip on tagchip");
@@ -69,10 +69,12 @@ export function renderControls() {
   tagChip.hidden = true;
   row2.appendChild(tagChip);
 
-  const reset = el("button", "chip clear", "Clear filters");
+  const reset = el("button", "chip clear");
   reset.type = "button";
   reset.id = "reset";
   reset.hidden = true;
+  reset.title = "Clear filters";
+  reset.innerHTML = iconSvg(null, "clear") + "<span>Clear filters</span>";
   row2.appendChild(reset);
 
   const sort = el("select", "push");

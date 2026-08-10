@@ -15,6 +15,8 @@ import { renderTagView, openTag } from "./tagview.js";
 import { renderTree, syncTreeSelection } from "./tree.js";
 import { renderX230View } from "./x230view.js";
 
+import { iconSvg } from "./polar.js";
+
 let statsBuilt = false;
 let routed = false;      // has route() run once? distinguishes deep links from clicks
 
@@ -112,7 +114,10 @@ export function syncChips() {
   $("x230Band").classList.toggle("on", state.x230 !== "any");
   const tagChip = $("tagChip");
   tagChip.hidden = !state.tag;
-  if (state.tag) tagChip.textContent = "tag: " + state.tag + "  ✕";
+  if (state.tag) {
+    tagChip.title = "Tag: " + state.tag + " (click to clear)";
+    tagChip.innerHTML = iconSvg(null, "tag") + "<span>tag: " + state.tag + " ✕</span>";
+  }
   $("reset").hidden = !filtersActive();
   document.querySelectorAll("#patbar .pat").forEach((b) => {
     const on = state.patterns.has(b.dataset.key);

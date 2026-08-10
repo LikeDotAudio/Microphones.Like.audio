@@ -82,11 +82,20 @@ export const GLYPHS = {
     '<path class="strokep" d="M9.8 9.8a2.5 2.5 0 0 1 4.4 1.4c0 1.5-2.2 2-2.2 3.3"/>' +
     '<circle class="fillp" cx="12" cy="17" r="1"/>',
   tube:
-    '<path class="strokep" d="M8 19V9.5a4 4 0 0 1 8 0V19"/>' +
-    '<line class="strokep" x1="6" y1="19" x2="18" y2="19"/>' +
-    '<line class="strokep" x1="10" y1="19" x2="10" y2="21.5"/>' +
-    '<line class="strokep" x1="14" y1="19" x2="14" y2="21.5"/>' +
-    '<path class="strokep" d="M10 13h4M12 10.5v5"/>',
+    '<path class="strokep" d="M8 20V9.5a4 4 0 0 1 8 0V20"/>' +
+    '<line class="strokep" x1="6.5" y1="20" x2="17.5" y2="20"/>' +
+    '<line class="strokep" x1="9" y1="20" x2="9" y2="22.5"/>' +
+    '<line class="strokep" x1="12" y1="20" x2="12" y2="22.5"/>' +
+    '<line class="strokep" x1="15" y1="20" x2="15" y2="22.5"/>' +
+    '<rect class="strokep" x="9.5" y="9.5" width="5" height="7" rx="0.5"/>' +
+    '<line class="strokep" x1="12" y1="12" x2="12" y2="14"/>',
+  current:
+    '<path class="strokep" d="M19 6.5L9 16.5l-4.5-4.5"/>',
+  tag:
+    '<path class="strokep" d="M20.5 13.5l-7 7a2 2 0 0 1-2.8 0L3 12.7V3h9.7l7.8 7.8a2 2 0 0 1 0 2.7z"/>' +
+    '<circle class="fillp" cx="7.5" cy="7.5" r="1.5"/>',
+  clear:
+    '<path class="strokep" d="M18 6L6 18M6 6l12 12"/>',
 };
 
 /* `curves` comes straight from config: [{shape, rot, scale, stroke}, …], or a
