@@ -629,6 +629,7 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
    leaves the tree with the half the two lists had between them, and the
    device with everything else. Each pane still scrolls inside itself. */
 @media (max-width: 980px) {
+  .pane-head h2 { display: none; }
   #modelPane { display: none; }
   main {
     grid-template-columns: minmax(0, 1fr);
@@ -637,12 +638,6 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
 
   /* dvh so the browser's collapsing toolbar cannot push main off-screen. */
   body { height: 100dvh; }
-
-  .filters { padding: 6px 8px; gap: 5px; }
-  .frow {
-    flex-wrap: wrap;
-    gap: 5px;
-  }
 
   .detail { padding: 14px 14px 50px; }
   .statsview { padding: 16px 14px 60px; }
