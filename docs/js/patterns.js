@@ -36,6 +36,7 @@ export function patternPass(m) {
     if (!p) continue;
     if (p.kind) { if ((m.kind || "mic") === p.kind) return true; continue; }
     if (p.multi && m.multi) return true;
+    if (p.tube && m.tube) return true;
     if ((m.patterns || []).some((n) => p.match.includes(n))) return true;
   }
   return false;

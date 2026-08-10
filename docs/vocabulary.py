@@ -55,15 +55,7 @@ FORM_LABELS = {
 }
 
 # Boolean columns on a model row that read well as a toggle.
-TRAITS = [
-    {"key": "tube", "label": "Tube", "glyph": "tube"},
-    {"key": "multi", "label": "Multipattern",
-     "icon": [{"shape": "cardioid", "scale": 0.66},
-              {"shape": "omni", "scale": 0.95, "stroke": True}]},
-    {"key": "stereo", "label": "Stereo",
-     "icon": [{"shape": "cardioid", "rot": -0.75, "scale": 0.8},
-              {"shape": "cardioid", "rot": 0.75, "scale": 0.8}]},
-]
+TRAITS = []
 
 # MSRP bands, [min, max) in dollars. `none` selects mics with no listed price.
 PRICE_BANDS = [
@@ -146,6 +138,8 @@ PATTERNS = [
      "match": ["9 polar patterns", "continuously variable pattern selection"],
      "icon": [{"shape": "cardioid", "scale": 0.66},
               {"shape": "omni", "scale": 0.95, "stroke": True}]},
+    {"key": "tube", "label": "Vacuum tube valve", "tube": True, "match": [],
+     "noun": "mics", "glyph": "tube"},
     {"key": "wireless", "label": "Wireless systems", "kind": "rf", "match": [],
      "noun": "systems", "glyph": "antenna"},
 ]

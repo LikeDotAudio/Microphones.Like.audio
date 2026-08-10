@@ -49,25 +49,24 @@
 <!-- The polar patterns sit between the tabs and the facet chips: they are a
      filter like the chips are, but a picture rather than a word. Filled by
      js/patterns.js from data/config.json. -->
-<div class="patbar" id="patbar" hidden></div>
-
-<!-- Above the panes, not inside one: these facets narrow the brand tree as
-     much as the model list. Both rows are filled by js/controls.js from
-     data/config.json. -->
-<div class="filters" id="filters" hidden>
-  <div class="frow" id="frowType"></div>
-  <div class="frow" id="frowMore"></div>
-</div>
-
 <main>
   <div class="pane">
-    <div class="pane-head"><h2>Brands</h2><span class="sub" id="brandCount"></span></div>
+    <div class="pane-head">
+      <h2>Brands</h2>
+      <div class="ribbon-icons" id="frowType"></div>
+      <span class="sub" id="brandCount"></span>
+    </div>
     <div class="pane-body" id="tree"></div>
   </div>
 
   <!-- Hidden on narrow screens: the brand tree already folds out to models. -->
   <div class="pane" id="modelPane">
-    <div class="pane-head"><h2 id="modelHead">Models</h2><span class="sub" id="modelCount"></span></div>
+    <div class="pane-head">
+      <h2 id="modelHead">Models</h2>
+      <div class="ribbon-icons" id="patbar"></div>
+      <div class="ribbon-icons" id="frowMore"></div>
+      <span class="sub" id="modelCount"></span>
+    </div>
     <div class="pane-body" id="models"><div class="empty">Loading…</div></div>
   </div>
 

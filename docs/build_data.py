@@ -146,6 +146,8 @@ def build_config(mics, rf_records, warn):
             entry["count"] = len(rf_records)
         elif spec.get("multi"):
             entry["count"] = sum(1 for m in mics if m["classification"].get("is_multipattern"))
+        elif spec.get("tube"):
+            entry["count"] = sum(1 for m in mics if m["classification"].get("is_tube"))
         else:
             entry["count"] = sum(1 for m in mics if any(n in spec["match"] for n in patterns_of(m)))
         patterns.append(entry)

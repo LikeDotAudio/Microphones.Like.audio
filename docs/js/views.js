@@ -37,8 +37,7 @@ export function showView(name) {
   // only; the other views carry their own filters. The bar sits outside
   // <main>, so hiding main is not enough to take it away.
   $("search").hidden = !browse;
-  $("patbar").hidden = !browse;
-  $("filters").hidden = !browse;
+  if ($("filters")) $("filters").hidden = !browse;
   $("navBrowse").classList.toggle("on", browse);
   $("navGallery").classList.toggle("on", gallery);
   $("navWireless").classList.toggle("on", wireless);
