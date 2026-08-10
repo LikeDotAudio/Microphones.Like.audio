@@ -1,7 +1,7 @@
 /* The brand pane: every brand, its surviving models, and keyboard walking. */
 
 import { $, el } from "./dom.js";
-import { brandView, filtersActive } from "./filters.js";
+import { brandView, filtersActive, filterSummary } from "./filters.js";
 import { go } from "./hash.js";
 import { state } from "./state.js";
 import { openScope } from "./views.js";
@@ -12,6 +12,9 @@ export function renderTree() {
   const frag = document.createDocumentFragment();
   const filtering = !!state.query || filtersActive();
   let shownBrands = 0, shownModels = 0;
+
+  const brandHead = $("brandHead");
+  if (brandHead) brandHead.textContent = filterSummary();
 
   /* Entry point for browsing the catalogue without committing to a brand. */
   const all = el("div", "brand");

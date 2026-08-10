@@ -76,6 +76,61 @@ export function clearFilters() {
   state.tag = null;
 }
 
+export function filterSummary() {
+  const c = cfg();
+  if (!c) return "Brands";
+  const parts = [];
+
+  if (state.query) {
+    parts.push("“" + state.query + "”");
+  }
+
+  if (state.type && state.type !== "all") {
+    const t = (c.types || []).find((x) => x.key === state.type);
+    if (t) parts.push(t.label);
+  }
+
+  if (state.patterns && state.patterns.size) {
+    for (const key of state.patterns) {
+      const p = (c.patterns || []).find((x) => x.key === key);
+      if (p) parts.push(p.label);
+    }
+  }
+
+  if (state.traits && state.traits.size) {
+    for (const key of state.traits) {
+      const t = (c.traits || []).find((x) => x.key === key);
+      if (t) parts.push(t.label);
+    }
+  }
+
+  if (state.currentOnly) {
+    parts.push("Current");
+  }
+
+  if (state.form && state.form !== "all") {
+    const f = (c.forms || []).find((x) => x.key === state.form);
+    if (f) parts.push(f.label);
+    else parts.push(state.form);
+  }
+
+  if (state.price && state.price !== "any") {
+    const p = (c.priceBands || []).find((x) => x.key === state.price);
+    if (p) parts.push(p.label);
+  }
+
+  if (state.x230 && state.x230 !== "any") {
+    const x = (c.x230Bands || []).find((x) => x.key === state.x230);
+    if (x) parts.push(x.label);
+  }
+
+  if (state.tag) {
+    parts.push("tag: " + state.tag);
+  }
+
+  return parts.length ? parts.join(" · ") : "Brands";
+}
+
 /* Which models of a brand survive the search box, the pattern buttons and the
    facet controls — null means the brand itself drops out of the tree. */
 export function brandView(brand) {

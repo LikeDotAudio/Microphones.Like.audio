@@ -3,7 +3,7 @@
 
 import { $ } from "./dom.js";
 import { PAGE } from "./config.js";
-import { filtersActive } from "./filters.js";
+import { filtersActive, filterSummary } from "./filters.js";
 import { renderGallery } from "./gallery.js";
 import { go, hashParts } from "./hash.js";
 import { renderDetail } from "./detail.js";
@@ -117,6 +117,8 @@ export function syncChips() {
     tagChip.title = "Tag: " + state.tag + " (click to clear)";
     tagChip.innerHTML = iconSvg(null, "tag") + "<span>tag: " + state.tag + " ✕</span>";
   }
+  const brandHead = $("brandHead");
+  if (brandHead) brandHead.textContent = filterSummary();
   $("reset").hidden = !filtersActive();
   document.querySelectorAll("#patbar .pat").forEach((b) => {
     const on = state.patterns.has(b.dataset.key);
