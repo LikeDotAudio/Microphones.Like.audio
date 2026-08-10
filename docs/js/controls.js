@@ -31,20 +31,15 @@ export function renderControls() {
   for (const t of usable(c.types)) {
     row1.appendChild(chip("type", t.key, t.label, t.count, t.icon, t.glyph));
   }
-  const form = el("select", "push");
+  const form = el("select");
   form.id = "form";
   form.title = "Form factor";
-  row1.appendChild(form);
   fillSelect(form, [{ key: "all", label: "Any form factor" }].concat(usable(c.forms)),
     { showCounts: true });
-
-  const row2 = $("frowMore");
-  row2.innerHTML = "";
 
   const price = el("select");
   price.id = "price";
   price.title = "MSRP range";
-  row2.appendChild(price);
   fillSelect(price, usable(c.priceBands), { showCounts: true });
 
   /* Not id="x230" — that belongs to the X230 tab's <section>, and a duplicate
@@ -52,8 +47,15 @@ export function renderControls() {
   const x230 = el("select");
   x230.id = "x230Band";
   x230.title = "AES-X230 score — how much of the profile this catalogue can fill in";
-  row2.appendChild(x230);
   fillSelect(x230, usable(c.x230Bands), { showCounts: true });
+
+  const sort = el("select");
+  sort.id = "sort";
+  sort.title = "Sort order";
+  fillSelect(sort, c.sorts);
+
+  const row2 = $("frowMore");
+  row2.innerHTML = "";
 
   for (const t of usable(c.traits)) {
     row2.appendChild(chip("trait", t.key, t.label, t.count, t.icon, t.glyph));
@@ -77,11 +79,14 @@ export function renderControls() {
   reset.innerHTML = iconSvg(null, "clear") + "<span>Clear filters</span>";
   row2.appendChild(reset);
 
-  const sort = el("select", "push");
-  sort.id = "sort";
-  sort.title = "Sort order";
-  row2.appendChild(sort);
-  fillSelect(sort, c.sorts);
+  const detailControls = $("detailControls");
+  if (detailControls) {
+    detailControls.innerHTML = "";
+    detailControls.appendChild(form);
+    detailControls.appendChild(price);
+    detailControls.appendChild(x230);
+    detailControls.appendChild(sort);
+  }
 
   fillSelect($("tagSort"), c.tagSorts);
 }

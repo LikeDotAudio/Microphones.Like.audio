@@ -46,7 +46,7 @@ export async function renderDetail() {
   host.scrollTop = 0;
   $("detailSub").textContent = isRf
     ? mic.rf.range_count + " tuning range" + (mic.rf.range_count === 1 ? "" : "s")
-    : (mic.source.mic_id ? "id " + mic.source.mic_id : "");
+    : "";
 }
 
 /* The drawing, its legend, and the fields every box came from. */
