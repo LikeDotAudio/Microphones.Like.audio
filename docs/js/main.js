@@ -78,16 +78,19 @@ $("search").addEventListener("input", (e) => {
   }, 120);
 });
 
-$("patbar").addEventListener("click", (e) => {
-  const btn = e.target.closest(".pat");
-  if (!btn) return;
-  const key = btn.dataset.key;
-  if (state.patterns.has(key)) state.patterns.delete(key);
-  else state.patterns.add(key);
-  applyFilters();
-});
+const patbar = $("patbar");
+if (patbar) {
+  patbar.addEventListener("click", (e) => {
+    const btn = e.target.closest(".pat");
+    if (!btn) return;
+    const key = btn.dataset.key;
+    if (state.patterns.has(key)) state.patterns.delete(key);
+    else state.patterns.add(key);
+    applyFilters();
+  });
+}
 
-$("filters").addEventListener("click", (e) => {
+document.addEventListener("click", (e) => {
   const chip = e.target.closest(".chip");
   if (!chip) return;
   if (chip.id === "reset") clearFilters();
