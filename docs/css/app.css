@@ -146,17 +146,17 @@ header {
   border-bottom: 1px solid var(--border);
 }
 .pat {
-  width: 30px; height: 30px; padding: 0;
+  width: 28px; height: 28px; padding: 0;
   display: grid; place-items: center;
   background: var(--panel-2); border: 1px solid var(--border);
   border-radius: 7px; cursor: pointer; color: var(--muted);
 }
 .pat:hover { border-color: var(--accent); color: var(--text); }
 .pat.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.pat svg { width: 21px; height: 21px; display: block; }
-.pat svg .fillp { fill: currentColor; opacity: .8; }
-.pat svg .strokep { fill: none; stroke: currentColor; stroke-width: 1.4; opacity: .8; }
-.pat.on svg .fillp, .pat.on svg .strokep { opacity: 1; }
+.pat svg { width: 22px; height: 22px; display: block; }
+.pat svg .fillp { fill: currentColor; opacity: .95; }
+.pat svg .strokep { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .95; }
+.pat.on svg .fillp, .pat.on svg .strokep { opacity: 1; stroke-width: 2; }
 
 .spacer { flex: 1; }
 .stat { font-size: 12px; color: var(--muted); white-space: nowrap; }
@@ -294,17 +294,17 @@ main {
 .frow { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .frow .push { margin-left: auto; }
 .pat, .chip {
-  width: 25px; height: 25px; padding: 0;
+  width: 28px; height: 28px; padding: 0;
   display: inline-grid; place-items: center;
   background: var(--panel-2); border: 1px solid var(--border);
-  border-radius: 6px; cursor: pointer; color: var(--muted); flex: none;
+  border-radius: 7px; cursor: pointer; color: var(--muted); flex: none;
 }
 .pat:hover, .chip:hover { border-color: var(--accent); color: var(--text); }
 .pat.on, .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.pat svg, .chip svg { width: 16px; height: 16px; display: block; }
-.pat svg .fillp, .chip svg .fillp { fill: currentColor; opacity: .8; }
-.pat svg .strokep, .chip svg .strokep { fill: none; stroke: currentColor; stroke-width: 1.4; opacity: .8; }
-.pat.on svg .fillp, .pat.on svg .strokep, .chip.on svg .fillp, .chip.on svg .strokep { opacity: 1; }
+.pat svg, .chip svg { width: 22px; height: 22px; display: block; }
+.pat svg .fillp, .chip svg .fillp { fill: currentColor; opacity: .95; }
+.pat svg .strokep, .chip svg .strokep { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .95; }
+.pat.on svg .fillp, .pat.on svg .strokep, .chip.on svg .fillp, .chip.on svg .strokep { opacity: 1; stroke-width: 2; }
 .chip span { display: none; }
 .chip.clear { border-style: dashed; }
 .filters select {
@@ -630,6 +630,7 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
    device with everything else. Each pane still scrolls inside itself. */
 @media (max-width: 980px) {
   .pane-head h2 { display: none; }
+  .pane:first-child .pane-head { display: none; }
   #modelPane { display: none; }
   main {
     grid-template-columns: minmax(0, 1fr);

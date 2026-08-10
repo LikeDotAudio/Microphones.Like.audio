@@ -62,7 +62,7 @@ export function renderControls() {
   }
   const current = c.availability.find((a) => a.key === "current");
   if (current && current.count) {
-    row2.appendChild(chip("avail", "current", current.label, current.count, null, "current"));
+    row1.appendChild(chip("avail", "current", current.label, current.count, null, "current"));
   }
 
   const tagChip = el("button", "chip on tagchip");
