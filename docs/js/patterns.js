@@ -11,7 +11,8 @@ export const patterns = () => usable(cfg().patterns);
 export const patternByKey = (key) => patterns().find((p) => p.key === key);
 
 export function renderPatternBar() {
-  const bar = $("patbar");
+  const bar = $("patbarButtons") || $("patbar");
+  if (!bar) return;
   bar.innerHTML = "";
   for (const p of patterns()) {
     const b = el("button", "pat");

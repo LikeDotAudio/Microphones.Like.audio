@@ -37,6 +37,7 @@ export function showView(name) {
   // only; the other views carry their own filters. The bar sits outside
   // <main>, so hiding main is not enough to take it away.
   $("search").hidden = !browse;
+  if ($("patbar")) $("patbar").hidden = !browse;
   if ($("filters")) $("filters").hidden = !browse;
   $("navBrowse").classList.toggle("on", browse);
   $("navGallery").classList.toggle("on", gallery);
@@ -99,11 +100,11 @@ export function route() {
 
 /* Push state back onto the controls — called after any programmatic change. */
 export function syncChips() {
-  document.querySelectorAll("#filters .chip[data-type]").forEach((c) =>
+  document.querySelectorAll(".chip[data-type]").forEach((c) =>
     c.classList.toggle("on", c.dataset.type === state.type));
-  document.querySelectorAll("#filters .chip[data-trait]").forEach((c) =>
+  document.querySelectorAll(".chip[data-trait]").forEach((c) =>
     c.classList.toggle("on", state.traits.has(c.dataset.trait)));
-  document.querySelectorAll("#filters .chip[data-avail]").forEach((c) =>
+  document.querySelectorAll(".chip[data-avail]").forEach((c) =>
     c.classList.toggle("on", state.currentOnly));
   $("form").value = state.form;
   $("form").classList.toggle("on", state.form !== "all");

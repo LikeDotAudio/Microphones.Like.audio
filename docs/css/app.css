@@ -141,9 +141,9 @@ header {
    same two panes the chips underneath them do — so they belong with the
    filters, not with the navigation. */
 .patbar {
-  flex: none; display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
-  padding: 7px 14px; background: var(--panel);
-  border-bottom: 1px solid var(--border-soft);
+  flex: none; display: flex; flex-direction: column; gap: 4px;
+  padding: 6px 14px; background: var(--panel);
+  border-bottom: 1px solid var(--border);
 }
 .pat {
   width: 30px; height: 30px; padding: 0;
