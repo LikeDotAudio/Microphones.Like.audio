@@ -217,7 +217,16 @@ main {
   flex: none;
 }
 .ribbon-icons {
-  display: flex; align-items: center; gap: 3px; flex-wrap: wrap;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 3px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ribbon-icons::-webkit-scrollbar {
+  display: none;
 }
 .pane-controls {
   margin-left: auto;
@@ -650,8 +659,7 @@ table.data .swatch { display: inline-block; width: 8px; height: 8px; border-radi
     justify-content: center;
   }
   .chip svg { width: 16px; height: 16px; }
-  .patbar { flex-wrap: wrap; gap: 4px; }
-  .frow { flex-wrap: wrap; gap: 5px; }
+  .patbar, .ribbon-icons { flex-wrap: nowrap; gap: 3px; }
 }
 
 /* The header stops being one line well before the panes stop being columns: a
